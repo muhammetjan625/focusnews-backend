@@ -12,12 +12,18 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ⚠️ PORT AYARI GÜNCELLENDİ: Bulut sunucu port atarsa onu kullanır, lokaldeysen 5000'i açar
+// PORT AYARI: Bulut sunucu (Render) port atarsa onu kullanır, lokaldeysen 5000'i açar
 const PORT = process.env.PORT || 5000;
 
 // Lokal Veritabanı Dosyasını Başlat
 const db = Datastore.create({ filename: './haberler.db', autoload: true });
 global.haberVeritabani = db;
+
+// ⚡ UYKU ENGELLEYİCİ (PING) ROTASI
+// UptimeRobot buraya her 10 dakikada bir istek atarak sunucunun uykuya dalmasını engelleyecek
+app.get('/api/ping', (req, res) => {
+    res.send('FocusNews Backend Uyanık!');
+});
 
 // API: Haberleri getir ve tarihe göre en yeni en üstte olacak şekilde sırala
 app.get('/api/haberler', async (req, res) => {
