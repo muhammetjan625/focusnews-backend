@@ -18,8 +18,9 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "mongoose": "^9.7.1",
+    "nedb": "^1.8.0",
     "nedb-promises": "^6.2.3",
-    "node-cron": "^4.4.1",
+    "node-cron": "^4.5.0",
     "rss-parser": "^3.13.0"
   }
 }
