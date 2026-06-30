@@ -14,7 +14,6 @@ async function haberIceriginiKaziyici(url) {
         const $ = cheerio.load(response.data);
         let butunMetin = [];
 
-        // Yeni eklenen sitelerin HTML gövdelerine tam uyumlu seçiciler (selectors)
         $('article p, .haber-metni p, .article-content p, #news-body p, .content p, .post-content p, .nd-content-column p, .detail-content p, .story-body p').each((index, element) => {
             const metin = $(element).text().trim();
             const kucukMetin = metin.toLowerCase();
@@ -41,38 +40,38 @@ async function haberIceriginiKaziyici(url) {
     }
 }
 
-// 🏛️ %100 KARARLI VE YAZILIMCI DOSTU YENİ GÜNCEL KAYNAK LİSTESİ (SÖZCÜ VE NTV İÇERMEZ)
+// 🏛️ %100 KARARLI VE YAZILIMCI DOSTU KAYNAKLAR
 const RSS_KAYNAKLARI = [
-    // 🏛️ TRT HABER (Sarsılmaz Altyapı)
+    // 🌍 TRT HABER
     { url: 'https://www.trthaber.com/gundem_articles.rss', source: 'TRT Haber', category: 'Gundem' },
     { url: 'https://www.trthaber.com/ekonomi_articles.rss', source: 'TRT Haber', category: 'Ekonomi' },
     { url: 'https://www.trthaber.com/spor_articles.rss', source: 'TRT Haber', category: 'Spor' },
     { url: 'https://www.trthaber.com/bilim_teknoloji_articles.rss', source: 'TRT Haber', category: 'Teknoloji' },
 
-    // 📺 HABERTÜRK (Kararlı Akış)
+    // 📺 HABERTÜRK
     { url: 'https://www.haberturk.com/rss/gundem.xml', source: 'Habertürk', category: 'Gundem' },
     { url: 'https://www.haberturk.com/rss/ekonomi.xml', source: 'Habertürk', category: 'Ekonomi' },
     { url: 'https://www.haberturk.com/rss/spor.xml', source: 'Habertürk', category: 'Spor' },
     { url: 'https://www.haberturk.com/rss/kategori/teknoloji.xml', source: 'Habertürk', category: 'Teknoloji' },
 
-    // 🌐 MYNET (Açık ve Hızlı RSS Altyapısı - Yeni!)
+    // 🌐 MYNET
     { url: 'https://www.mynet.com/haber/rss/kategori/gundem/', source: 'Mynet', category: 'Gundem' },
     { url: 'https://www.mynet.com/haber/rss/kategori/finans/', source: 'Mynet', category: 'Ekonomi' },
     { url: 'https://www.mynet.com/haber/rss/kategori/spor/', source: 'Mynet', category: 'Spor' },
     { url: 'https://www.mynet.com/haber/rss/kategori/teknoloji/', source: 'Mynet', category: 'Teknoloji' },
 
-    // 📰 T24 (Botları Engellemeyen Bağımsız Medya - Yeni!)
+    // 📰 T24
     { url: 'https://t24.com.tr/rss/haber/gundem', source: 'T24', category: 'Gundem' },
     { url: 'https://t24.com.tr/rss/haber/ekonomi', source: 'T24', category: 'Ekonomi' },
     { url: 'https://t24.com.tr/rss/haber/spor', source: 'T24', category: 'Spor' },
     { url: 'https://t24.com.tr/rss/haber/bilim-teknoloji', source: 'T24', category: 'Teknoloji' },
 
-    // 📣 İHLAS HABER AJANSI (İHA - Doğrudan Ana Damar - Yeni!)
+    // 📣 İHLAS HABER AJANSI
     { url: 'https://www.iha.com.tr/rss', source: 'İHA', category: 'Gundem' }
 ];
 
 async function haberleriCekVeKaydet() {
-    console.log('🔄 Haber havuzu stabil kaynaklar üzerinden taranıyor...');
+    console.log('🔄 Haber havuzu güvenli modda taranıyor...');
     
     for (const kaynak of RSS_KAYNAKLARI) {
         try {
@@ -87,25 +86,28 @@ async function haberleriCekVeKaydet() {
                     else if (item.content && item.content.match(/src="([^"]+)"/)) resim = item.content.match(/src="([^"]+)"/)[1];
 
                     const tamIcerik = await haberIceriginiKaziyici(item.link);
-                    const yedekMetin = item.contentSnippet || item.summary || item.title;
+                    const yedekMetin = item.contentSnippet || item.summary || item.title || "Haber içeriği yüklenemedi.";
+
+                    // 🚀 GARANTİ KATMANI: Kazıma boş dönerse yedek metni devreye al
+                    const nihaiIcerik = tamIcerik && tamIcerik.length > 100 ? tamIcerik : yedekMetin;
 
                     const yeniHaber = {
                         title: item.title,
                         link: item.link,
                         pubDate: item.pubDate || new Date().toISOString(),
-                        contentSnippet: tamIcerik && tamIcerik.length > 50 ? tamIcerik : yedekMetin,
+                        contentSnippet: nihaiIcerik,
                         source: kaynak.source,
                         category: kaynak.category,
                         imageUrl: resim
                     };
 
                     global.haberVeritabani.insert(yeniHaber, (insertErr) => {
-                        if (!insertErr) console.log(`🚀 Başarıyla eklendi (${kaynak.source}): ${item.title.substring(0, 25)}...`);
+                        if (!insertErr) console.log(`🚀 Başarıyla eklendi (${kaynak.source}): ${item.title.substring(0, 20)}...`);
                     });
                 });
             }
         } catch (error) {
-            // Log kalabalığı yapmasın diye sessizce geçiyoruz kanka patlayan olursa
+            // Hatalı/cevap vermeyen kaynakları es geçiyoruz
         }
     }
 }
