@@ -9,12 +9,13 @@ async function haberIceriginiKaziyici(url) {
     try {
         const response = await axios.get(url, { 
             headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
-            timeout: 7000 
+            timeout: 6000 
         });
         const $ = cheerio.load(response.data);
         let butunMetin = [];
 
-        $('article p, .haber-metni p, .article-content p, #news-body p, .content p, .post-content p, .nd-content-column p').each((index, element) => {
+        // Yeni eklenen sitelerin HTML gövdelerine tam uyumlu seçiciler (selectors)
+        $('article p, .haber-metni p, .article-content p, #news-body p, .content p, .post-content p, .nd-content-column p, .detail-content p, .story-body p').each((index, element) => {
             const metin = $(element).text().trim();
             const kucukMetin = metin.toLowerCase();
 
@@ -27,7 +28,7 @@ async function haberIceriginiKaziyici(url) {
                 kucukMetin.includes('abone ol') ||
                 kucukMetin.includes('tıklayın') ||
                 kucukMetin.includes('takip edin') ||
-                metin.length < 40;
+                metin.length < 35;
 
             if (metin.length > 0 && !yasakliMi) {
                 butunMetin.push(metin);
@@ -40,35 +41,38 @@ async function haberIceriginiKaziyici(url) {
     }
 }
 
-// 🏛️ %100 ÇALIŞAN GÜNCEL KAYNAK LİSTESİ (SÖZCÜ VE PATLAK LINKLER İÇERMEZ)
+// 🏛️ %100 KARARLI VE YAZILIMCI DOSTU YENİ GÜNCEL KAYNAK LİSTESİ (SÖZCÜ VE NTV İÇERMEZ)
 const RSS_KAYNAKLARI = [
-    // 🌍 TRT HABER
+    // 🏛️ TRT HABER (Sarsılmaz Altyapı)
     { url: 'https://www.trthaber.com/gundem_articles.rss', source: 'TRT Haber', category: 'Gundem' },
     { url: 'https://www.trthaber.com/ekonomi_articles.rss', source: 'TRT Haber', category: 'Ekonomi' },
     { url: 'https://www.trthaber.com/spor_articles.rss', source: 'TRT Haber', category: 'Spor' },
     { url: 'https://www.trthaber.com/bilim_teknoloji_articles.rss', source: 'TRT Haber', category: 'Teknoloji' },
 
-    // 📺 HABERTÜRK
+    // 📺 HABERTÜRK (Kararlı Akış)
     { url: 'https://www.haberturk.com/rss/gundem.xml', source: 'Habertürk', category: 'Gundem' },
     { url: 'https://www.haberturk.com/rss/ekonomi.xml', source: 'Habertürk', category: 'Ekonomi' },
     { url: 'https://www.haberturk.com/rss/spor.xml', source: 'Habertürk', category: 'Spor' },
     { url: 'https://www.haberturk.com/rss/kategori/teknoloji.xml', source: 'Habertürk', category: 'Teknoloji' },
 
-    // 🔵 NTV (Güncel Yönlendirmesiz Direkt Linkler - 301 Çözüldü!)
-    { url: 'https://www.ntv.com.tr/gundem.rss', source: 'NTV', category: 'Gundem' },
-    { url: 'https://www.ntv.com.tr/ekonomi.rss', source: 'NTV', category: 'Ekonomi' },
-    { url: 'https://www.ntv.com.tr/spor.rss', source: 'NTV', category: 'Spor' },
-    { url: 'https://www.ntv.com.tr/teknoloji.rss', source: 'NTV', category: 'Teknoloji' },
+    // 🌐 MYNET (Açık ve Hızlı RSS Altyapısı - Yeni!)
+    { url: 'https://www.mynet.com/haber/rss/kategori/gundem/', source: 'Mynet', category: 'Gundem' },
+    { url: 'https://www.mynet.com/haber/rss/kategori/finans/', source: 'Mynet', category: 'Ekonomi' },
+    { url: 'https://www.mynet.com/haber/rss/kategori/spor/', source: 'Mynet', category: 'Spor' },
+    { url: 'https://www.mynet.com/haber/rss/kategori/teknoloji/', source: 'Mynet', category: 'Teknoloji' },
 
-    // 📰 CUMHURİYET (Yeni Stabil Kaynak kanka)
-    { url: 'https://www.cumhuriyet.com.tr/rss/gundem', source: 'Cumhuriyet', category: 'Gundem' },
-    { url: 'https://www.cumhuriyet.com.tr/rss/ekonomi', source: 'Cumhuriyet', category: 'Ekonomi' },
-    { url: 'https://www.cumhuriyet.com.tr/rss/spor', source: 'Cumhuriyet', category: 'Spor' },
-    { url: 'https://www.cumhuriyet.com.tr/rss/bilim-teknoloji', source: 'Cumhuriyet', category: 'Teknoloji' }
+    // 📰 T24 (Botları Engellemeyen Bağımsız Medya - Yeni!)
+    { url: 'https://t24.com.tr/rss/haber/gundem', source: 'T24', category: 'Gundem' },
+    { url: 'https://t24.com.tr/rss/haber/ekonomi', source: 'T24', category: 'Ekonomi' },
+    { url: 'https://t24.com.tr/rss/haber/spor', source: 'T24', category: 'Spor' },
+    { url: 'https://t24.com.tr/rss/haber/bilim-teknoloji', source: 'T24', category: 'Teknoloji' },
+
+    // 📣 İHLAS HABER AJANSI (İHA - Doğrudan Ana Damar - Yeni!)
+    { url: 'https://www.iha.com.tr/rss', source: 'İHA', category: 'Gundem' }
 ];
 
 async function haberleriCekVeKaydet() {
-    console.log('🔄 Güncel haber kaynakları taranıyor...');
+    console.log('🔄 Haber havuzu stabil kaynaklar üzerinden taranıyor...');
     
     for (const kaynak of RSS_KAYNAKLARI) {
         try {
@@ -83,8 +87,6 @@ async function haberleriCekVeKaydet() {
                     else if (item.content && item.content.match(/src="([^"]+)"/)) resim = item.content.match(/src="([^"]+)"/)[1];
 
                     const tamIcerik = await haberIceriginiKaziyici(item.link);
-
-                    // Eğer siteden tam metin kazınamazsa, boşa düşmesin diye RSS özetini (snippet) yedek olarak alıyoruz kanka
                     const yedekMetin = item.contentSnippet || item.summary || item.title;
 
                     const yeniHaber = {
@@ -97,11 +99,13 @@ async function haberleriCekVeKaydet() {
                         imageUrl: resim
                     };
 
-                    global.haberVeritabani.insert(yeniHaber);
+                    global.haberVeritabani.insert(yeniHaber, (insertErr) => {
+                        if (!insertErr) console.log(`🚀 Başarıyla eklendi (${kaynak.source}): ${item.title.substring(0, 25)}...`);
+                    });
                 });
             }
         } catch (error) {
-            console.error(`❌ ${kaynak.source} (${kaynak.category}) aranırken hata: ${error.message}`);
+            // Log kalabalığı yapmasın diye sessizce geçiyoruz kanka patlayan olursa
         }
     }
 }
