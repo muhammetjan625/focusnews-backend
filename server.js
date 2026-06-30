@@ -1,58 +1,62 @@
 // backend/server.js
 const express = require('express');
 const cors = require('cors');
+const Datastore = require('nedb');
+const path = require('path');
 const cron = require('node-cron');
-const Datastore = require('nedb-promises');
-
 const haberleriCekVeKaydet = require('./utils/rssBot');
 
 const app = express();
+const PORT = process.env.PORT || 5000;
 
-// CORS Ayarı: Firebase'deki frontend sitemizin buluttaki backend'e erişebilmesi için şarttır
+// CORS ayarları - Frontend'in API'ye erişebilmesi için
 app.use(cors());
 app.use(express.json());
 
-// PORT AYARI: Bulut sunucu (Render) port atarsa onu kullanır, lokaldeysen 5000'i açar
-const PORT = process.env.PORT || 5000;
+// Veritabanı bağlantısı (nedb)
+const dbPath = path.join(__dirname, 'haberler.db');
+global.haberVeritabani = new Datastore({ filename: dbPath, autoload: true });
 
-// Lokal Veritabanı Dosyasını Başlat
-const db = Datastore.create({ filename: './haberler.db', autoload: true });
-global.haberVeritabani = db;
-
-// ⚡ UYKU ENGELLEYİCİ (PING) ROTASI
-// UptimeRobot buraya her 10 dakikada bir istek atarak sunucunun uykuya dalmasını engelleyecek
-app.get('/api/ping', (req, res) => {
-    res.send('FocusNews Backend Uyanık!');
+// ── 🗑️ SİHİRLİ TEMİZLİK KODU ──
+// Sunucu her başladığında, eski Sözcü haberlerini veritabanından kökten siler.
+global.haberVeritabani.remove({ source: "Sözcü" }, { multi: true }, function (err, numRemoved) {
+    if (err) console.error("❌ Sözcü temizlenirken hata:", err);
+    else console.log(`🗑️ Veritabanı tertemiz: ${numRemoved} adet eski Sözcü haberi silindi!`);
 });
 
-// API: Haberleri getir ve tarihe göre en yeni en üstte olacak şekilde sırala
-app.get('/api/haberler', async (req, res) => {
-    try {
-        const { kategori } = req.query;
-        let sorgu = {};
-        
-        if (kategori && kategori !== 'Tümü') {
-            sorgu.category = kategori;
-        }
-
-        const haberler = await db.find(sorgu).sort({ pubDate: -1 });
-
-        res.json({
-            success: true,
-            data: haberler
-        });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
+// Veritabanı indeksleme (Hızlı sorgu için)
+global.haberVeritabani.ensureIndex({ fieldName: 'link', unique: true }, (err) => {
+    if (err) console.log("⚠️ İndeksleme uyarısı (normal):", err.message);
 });
 
-// Sunucuyu Başlat (0.0.0.0 dinlemesi bulut sunucuların dış dünyaya kapı açması için kritiktir)
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🖥️ Canlı Sunucu ${PORT} portu üzerinde başarıyla ayağa kalktı.`);
-    haberleriCekVeKaydet(); // Sunucu ilk açıldığında bot hemen çalışıp havuzu doldurur
-});
-
-// Cron Job: Her 10 dakikada bir arka planda otomatik tara
-cron.schedule('*/10 * * * *', () => {
+// 🔄 Otomatik Haber Tarama (Cron Job)
+// Her 15 dakikada bir botu tetikler
+cron.schedule('*/15 * * * *', () => {
     haberleriCekVeKaydet();
+});
+
+// 📡 API Uç Noktaları (Routes)
+
+// 1. Tüm Haberleri Getir (Ana Sayfa)
+app.get('/api/haberler', (e, res) => {
+    global.haberVeritabani.find({}).sort({ pubDate: -1 }).exec((err, docs) => {
+        if (err) return res.status(500).json({ success: false, error: err.message });
+        res.json({ success: true, count: docs.length, data: docs });
+    });
+});
+
+// 2. Kategoriye Göre Haberleri Getir
+app.get('/api/haberler/:kategori', (req, res) => {
+    const kategori = req.params.kategori;
+    global.haberVeritabani.find({ category: kategori }).sort({ pubDate: -1 }).exec((err, docs) => {
+        if (err) return res.status(500).json({ success: false, error: err.message });
+        res.json({ success: true, count: docs.length, data: docs });
+    });
+});
+
+// Sunucuyu Başlat
+app.listen(PORT, () => {
+    console.log(`🚀 FocusNews Backend ${PORT} portunda yayında!`);
+    // Sunucu ilk açıldığında da bir kez tarama yapalım
+    setTimeout(haberleriCekVeKaydet, 5000);
 });
