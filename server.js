@@ -1,16 +1,13 @@
-// Node.js 24+ için NeDB uyumluluk yaması
+// Node.js uyumluluk yaması
 const util = require('util');
-
 if (typeof util.isDate !== 'function') {
-    util.isDate = (obj) =>
-        Object.prototype.toString.call(obj) === '[object Date]';
+    util.isDate = (obj) => Object.prototype.toString.call(obj) === '[object Date]';
 }
 
 const express = require('express');
 const cors = require('cors');
 const Datastore = require('nedb');
 const path = require('path');
-const https = require('https');
 const axios = require('axios');
 require('dotenv').config();
 
@@ -19,19 +16,54 @@ const haberleriCekVeKaydet = require('./utils/rssBot');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Render servisinin adresi
-const RENDER_URL =
-    process.env.RENDER_URL ||
-    'https://focusnews-api.onrender.com/api/haberler?limit=1';
-
 // ==========================================
-// ⚙️ YÖNETİM & DİNAMİK AYARLAR (STATE)
+// 📂 VERİTABANLARI (NeDB)
 // ==========================================
-let sistemBakimModunda = false;
-let rssDakikaAraligi = 3; // Varsayılan 3 dakika
+global.haberVeritabani = new Datastore({
+    filename: path.resolve(__dirname, 'haberler.db'),
+    autoload: true
+});
 
-// Dinamik RSS Kaynakları Listesi
-let dinamikRssKaynaklari = [
+global.rssKaynakVeritabani = new Datastore({
+    filename: path.resolve(__dirname, 'rss_kaynaklar.db'),
+    autoload: true
+});
+
+global.logVeritabani = new Datastore({
+    filename: path.resolve(__dirname, 'sistem_loglari.db'),
+    autoload: true
+});
+
+// Yeni Discord Webhook Veritabanı
+global.discordWebhookVeritabani = new Datastore({
+    filename: path.resolve(__dirname, 'discord_webhooks.db'),
+    autoload: true
+});
+
+global.haberVeritabani.ensureIndex({ fieldName: 'link', unique: true });
+global.rssKaynakVeritabani.ensureIndex({ fieldName: 'url', unique: true });
+global.discordWebhookVeritabani.ensureIndex({ fieldName: 'url', unique: true });
+
+// Varsayılan Webhook'ları .env'den yükle (Eğer DB boşsa)
+global.discordWebhookVeritabani.count({}, (err, count) => {
+    if (count === 0 && process.env.DISCORD_WEBHOOK_URLS) {
+        const envUrls = process.env.DISCORD_WEBHOOK_URLS.split(',').map(u => u.trim()).filter(Boolean);
+        const defaultHooks = envUrls.map((url, i) => ({
+            isim: `Discord Kanalı ${i + 1}`,
+            url: url,
+            aktif: true,
+            eklenmeTarihi: new Date().toISOString()
+        }));
+        if (defaultHooks.length > 0) {
+            global.discordWebhookVeritabani.insert(defaultHooks, () => {
+                console.log('✅ Varsayılan Discord webhooklar veritabanına aktarıldı.');
+            });
+        }
+    }
+});
+
+// Varsayılan RSS Kaynakları
+const varsayilanKaynaklar = [
     { url: 'https://www.aa.com.tr/tr/rss/default?cat=guncel', source: 'Anadolu Ajansi', category: 'Gundem' },
     { url: 'https://www.trthaber.com/sondakika_articles.rss', source: 'TRT Haber', category: 'Gundem' },
     { url: 'https://www.haberturk.com/rss', source: 'Haberturk', category: 'Gundem' },
@@ -50,378 +82,209 @@ let dinamikRssKaynaklari = [
     { url: 'https://www.haberturk.com/rss/spor.xml', source: 'Haberturk', category: 'Spor' }
 ];
 
-// ==========================================
-// 🛡️ CORS VE GÜVENLİK AYARLARI
-// ==========================================
-const allowedOrigins = [
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    'https://momonews.web.app',
-];
-
-app.use(cors({
-    origin: (origin, callback) => {
-        if (!origin || allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
-            callback(null, true);
-        } else {
-            callback(new Error('CORS politikası tarafından engellendi.'));
-        }
-    },
-    methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true,
-    optionsSuccessStatus: 204,
-}));
-
-app.use(express.json({ limit: '20kb' }));
-
-// ==========================================
-// VERİTABANI
-// ==========================================
-const dbPath = path.resolve(__dirname, 'haberler.db');
-console.log(`📂 Veritabanı dosyası: ${dbPath}`);
-
-global.haberVeritabani = new Datastore({
-    filename: dbPath,
-    autoload: true
+global.rssKaynakVeritabani.count({}, (err, count) => {
+    if (count === 0) {
+        global.rssKaynakVeritabani.insert(varsayilanKaynaklar, () => {
+            console.log('✅ Varsayılan RSS kaynakları DB-ye yüklendi.');
+        });
+    }
 });
 
-global.haberVeritabani.ensureIndex(
-    { fieldName: 'link', unique: true },
-    (err) => {
-        if (err) {
-            console.error('⚠️ İndeks oluşturma hatası:', err.message);
-        } else {
-            console.log('✅ Benzersiz haber bağlantısı indeksi aktif.');
-        }
-    }
-);
-
 // ==========================================
-// DİNAMİK RSS TARAMA DÖNGÜSÜ
+// 🛡️ MİDDLEWARE & LOGLAMA
 // ==========================================
-let rssIslemDevamEdiyor = false;
+app.use(cors({ origin: true, credentials: true }));
+app.use(express.json({ limit: '50kb' }));
 
-async function rssTaramasiBaslat() {
-    if (rssIslemDevamEdiyor) return;
-    rssIslemDevamEdiyor = true;
-
-    try {
-        // Fonksiyona dinamik kaynakları argüman olarak gönderiyoruz
-        await haberleriCekVeKaydet(dinamikRssKaynaklari);
-    } catch (err) {
-        console.error('❌ RSS tarama hatası:', err.message);
-    } finally {
-        rssIslemDevamEdiyor = false;
-    }
+function sistemLogKaydet(tip, mesaj, detay = {}) {
+    const logKaydi = { tip, mesaj, detay, tarih: new Date().toISOString() };
+    global.logVeritabani.insert(logKaydi);
+    console.log(`[LOG - ${tip}]: ${mesaj}`);
 }
 
-// Tarama aralığını dinamik olarak yöneten interval mekanizması
+// Aktif webhook'ları dizi olarak getiren yardımcı
+const aktifWebhooksGetir = () => {
+    return new Promise((resolve) => {
+        global.discordWebhookVeritabani.find({ aktif: true }, (err, docs) => {
+            resolve(docs ? docs.map(d => d.url) : []);
+        });
+    });
+};
+
+// ==========================================
+// ⏱️ OTOMATİK ZAMANLAYICI
+// ==========================================
+global.rssDakikaAraligi = 3;
 let canliTaramaInterval = null;
 
 function taramaZamanlayicisiniGuncelle(dakika) {
     if (canliTaramaInterval) clearInterval(canliTaramaInterval);
-    const milisaniye = Number(dakika) * 60 * 1000;
-    
     canliTaramaInterval = setInterval(() => {
-        rssTaramasiBaslat();
-    }, milisaniye);
-
-    console.log(`⏱️ RSS tarama döngüsü güncellendi: Her ${dakika} dakikada bir taranacak.`);
+        global.rssKaynakVeritabani.find({}, async (err, kaynaklar) => {
+            if (kaynaklar && kaynaklar.length > 0) await haberleriCekVeKaydet(kaynaklar);
+        });
+    }, Number(dakika) * 60 * 1000);
 }
+taramaZamanlayicisiniGuncelle(global.rssDakikaAraligi);
 
-// Başlangıçta 3 dakika olarak başlat
-taramaZamanlayicisiniGuncelle(rssDakikaAraligi);
-
-// ==========================================
-// ANTI-SLEEP / KEEP-ALIVE
-// ==========================================
-const keepAliveTimer = setInterval(() => {
-    console.log('⚡ Keep-alive isteği gönderiliyor...');
-
-    const request = https.get(RENDER_URL, (res) => {
-        console.log(`🌐 Keep-alive HTTP durumu: ${res.statusCode}`);
-        res.resume();
+setTimeout(() => {
+    global.rssKaynakVeritabani.find({}, async (err, kaynaklar) => {
+        if (kaynaklar && kaynaklar.length > 0) await haberleriCekVeKaydet(kaynaklar);
     });
-
-    request.setTimeout(15000, () => {
-        request.destroy(new Error('Keep-alive isteği zaman aşımına uğradı.'));
-    });
-
-    request.on('error', (err) => {
-        console.error('⚠️ Keep-alive hatası:', err.message);
-    });
-}, 5 * 60 * 1000);
+}, 3000);
 
 // ==========================================
-// YARDIMCI FONKSİYONLAR
-// ==========================================
-function pozitifTamSayi(value, varsayilan, maksimum) {
-    const sayi = Number(value);
-    if (!Number.isSafeInteger(sayi) || sayi < 1) {
-        return varsayilan;
-    }
-    return Math.min(sayi, maksimum);
-}
-
-function regexIcinKacir(metin) {
-    return metin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-// ==========================================
-// API: TÜM HABERLER
-// GET /api/haberler
+// 🌐 API ENDPOINTLERİ
 // ==========================================
 app.get('/api/haberler', (req, res) => {
-    const { search, since } = req.query;
-
-    const limit = pozitifTamSayi(req.query.limit, 50, 100);
-    const page = pozitifTamSayi(req.query.page, 1, 1000000);
-    const skipAmount = (page - 1) * limit;
-
-    const query = {};
-
-    if (typeof search === 'string' && search.trim()) {
-        const arama = new RegExp(regexIcinKacir(search.trim()), 'i');
-        query.$or = [
-            { title: arama },
-            { contentSnippet: arama },
-            { source: arama }
-        ];
-    }
-
-    if (typeof since === 'string' && since.trim()) {
-        query.pubDate = { $gte: since.trim() };
-    }
-
-    global.haberVeritabani
-        .find(query)
-        .sort({ pubDate: -1 })
-        .skip(skipAmount)
-        .limit(limit)
-        .exec((err, docs) => {
-            if (err) {
-                console.error('Haber sorgulama hatası:', err.message);
-                return res.status(500).json({
-                    success: false,
-                    error: 'Haberler alınırken bir hata oluştu.'
-                });
-            }
-
-            global.haberVeritabani.count(query, (countErr, total) => {
-                if (countErr) {
-                    console.error('Haber sayma hatası:', countErr.message);
-                    return res.status(500).json({
-                        success: false,
-                        error: 'Haber sayısı alınamadı.'
-                    });
-                }
-
-                return res.json({
-                    success: true,
-                    count: docs.length,
-                    totalAmount: total,
-                    currentPage: page,
-                    totalPages: Math.ceil(total / limit),
-                    bakimModu: sistemBakimModunda, // Frontend bakım durumu takibi için
-                    data: docs
-                });
-            });
-        });
-});
-
-// ==========================================
-// API: KATEGORİYE GÖRE HABERLER
-// GET /api/haberler/:kategori
-// ==========================================
-app.get('/api/haberler/:kategori', (req, res) => {
-    const kategori = req.params.kategori;
-
-    const limit = pozitifTamSayi(req.query.limit, 50, 100);
-    const page = pozitifTamSayi(req.query.page, 1, 1000000);
-    const skipAmount = (page - 1) * limit;
-
-    const query = { category: kategori };
-
-    global.haberVeritabani
-        .find(query)
-        .sort({ pubDate: -1 })
-        .skip(skipAmount)
-        .limit(limit)
-        .exec((err, docs) => {
-            if (err) {
-                console.error('Kategori sorgulama hatası:', err.message);
-                return res.status(500).json({
-                    success: false,
-                    error: 'Kategori haberleri alınamadı.'
-                });
-            }
-
-            global.haberVeritabani.count(query, (countErr, total) => {
-                if (countErr) {
-                    console.error('Kategori haber sayma hatası:', countErr.message);
-                    return res.status(500).json({
-                        success: false,
-                        error: 'Kategori haber sayısı alınamadı.'
-                    });
-                }
-
-                return res.json({
-                    success: true,
-                    count: docs.length,
-                    totalAmount: total,
-                    currentPage: page,
-                    totalPages: Math.ceil(total / limit),
-                    bakimModu: sistemBakimModunda,
-                    data: docs
-                });
-            });
-        });
-});
-
-// ==========================================
-// API: DİSCORD GERİ BİLDİRİMİ
-// POST /api/geribildirim
-// ==========================================
-app.post('/api/geribildirim', async (req, res) => {
-    const mesaj =
-        typeof req.body?.mesaj === 'string'
-            ? req.body.mesaj.trim()
-            : '';
-
-    if (!mesaj) {
-        return res.status(400).json({
-            success: false,
-            error: 'Mesaj boş olamaz.'
-        });
-    }
-
-    const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1564770542521815040/ubPpG7LKSvJ4sA0y1I1L7j_lyj9lmhJpfKewLyov-dNWaFMJgWtgxF3w7V3KK8DhMpJ3';
-
-    try {
-        const discordResponse = await axios.post(
-            DISCORD_WEBHOOK_URL,
-            {
-                content: '📩 **MomoNews | Yeni Kullanıcı Geri Bildirimi**',
-                embeds: [
-                    {
-                        title: 'Görüş / Öneri / Hata Bildirimi',
-                        description: mesaj,
-                        color: 3447003,
-                        timestamp: new Date().toISOString()
-                    }
-                ]
-            },
-            { timeout: 15000 }
-        );
-
-        return res.json({
-            success: true,
-            message: 'Geri bildirim başarıyla iletildi!',
-            discordStatus: discordResponse.status
-        });
-    } catch (err) {
-        console.error('🚨 Discord Webhook Hata Detayı:', err.response?.data || err.message);
-        return res.status(err.response?.status || 502).json({
-            success: false,
-            error: 'Discord webhook isteği reddetti.',
-            discordStatusCode: err.response?.status || 502,
-            discordErrorDetails: err.response?.data || err.message
-        });
-    }
-});
-
-// ==========================================
-// SAĞLIK KONTROLÜ
-// GET /
-// ==========================================
-app.get('/', (req, res) => {
-    res.json({
-        success: true,
-        message: 'MomoNews API çalışıyor.',
-        bakimModu: sistemBakimModunda,
-        status: 'online'
+    global.haberVeritabani.find({}).sort({ pubDate: -1 }).limit(60).exec((err, docs) => {
+        if (err) return res.status(500).json({ success: false, error: err.message });
+        res.json({ success: true, count: docs.length, bakimModu: global.sistemBakimModunda || false, data: docs });
     });
 });
 
+// 1. Geri Bildirim Endpointi
+app.post('/api/geribildirim', async (req, res) => {
+    const { mesaj } = req.body;
+    if (!mesaj) return res.status(400).json({ success: false, error: 'Mesaj boş olamaz.' });
+
+    const webhookUrls = await aktifWebhooksGetir();
+    const embedPayload = {
+        content: '📩 **MomoNews | Yeni Kullanıcı Geri Bildirimi**',
+        embeds: [{ title: 'Görüş / Öneri / Hata', description: mesaj, color: 3447003, timestamp: new Date().toISOString() }]
+    };
+
+    for (const url of webhookUrls) {
+        try { await axios.post(url, embedPayload); } catch (e) {}
+    }
+
+    sistemLogKaydet('GERIBILDIRIM', 'Yeni geri bildirim Discord kanallarına iletildi.');
+    res.json({ success: true });
+});
+
+// 2. Test Webhook Endpointi
+app.get('/api/test-webhook', async (req, res) => {
+    const testZamani = new Date().toISOString();
+    sistemLogKaydet('WEBHOOK_TEST', 'Test webhook tetiklendi.', { zaman: testZamani });
+
+    const webhookUrls = await aktifWebhooksGetir();
+    const embedPayload = {
+        content: '🧪 **MomoNews | Discord Webhook Bağlantı Testi**',
+        embeds: [{ title: 'Sistem Durumu: Çevrimiçi', description: `Test başarılı.\nZaman: \`${testZamani}\``, color: 5763719, timestamp: testZamani }]
+    };
+
+    for (const url of webhookUrls) {
+        try { await axios.post(url, embedPayload); } catch (e) {}
+    }
+
+    res.json({ success: true, message: 'Test webhook tetiklendi!', timestamp: testZamani });
+});
+
+// Heartbeat
+setInterval(() => {
+    axios.get(`http://localhost:${PORT}/api/test-webhook`).catch(() => {});
+}, 2 * 60 * 1000);
+
 // ==========================================
-// 🔒 GİZLİ YÖNETİCİ KONTROL PANELİ API
+// 🛠️ YÖNETİM PANELİ (WEBHOOK & RSS CRUD)
 // ==========================================
+
+// Webhook'ları Listele
+app.get('/api/gizli-yonetim/webhooks', (req, res) => {
+    global.discordWebhookVeritabani.find({}, (err, docs) => {
+        if (err) return res.status(500).json({ success: false, error: err.message });
+        res.json({ success: true, webhooks: docs || [] });
+    });
+});
+
+// Yeni Webhook Ekle
+app.post('/api/gizli-yonetim/webhook-ekle', (req, res) => {
+    const { isim, url } = req.body;
+    if (!url || !isim) return res.status(400).json({ success: false, error: 'İsim ve URL zorunludur.' });
+
+    global.discordWebhookVeritabani.insert({ isim, url, aktif: true, eklenmeTarihi: new Date().toISOString() }, (err) => {
+        if (err) return res.status(400).json({ success: false, error: 'Bu webhook zaten kayıtlı.' });
+        sistemLogKaydet('WEBHOOK', `Yeni Discord webhook eklendi: ${isim}`);
+        res.json({ success: true, message: 'Webhook başarıyla eklendi!' });
+    });
+});
+
+// Webhook Sil
+app.post('/api/gizli-yonetim/webhook-sil', (req, res) => {
+    const { id } = req.body;
+    if (!id) return res.status(400).json({ success: false, error: 'ID gerekli.' });
+
+    global.discordWebhookVeritabani.remove({ _id: id }, {}, (err, numRemoved) => {
+        if (err || numRemoved === 0) return res.status(404).json({ success: false, error: 'Webhook bulunamadı.' });
+        sistemLogKaydet('WEBHOOK', `Discord webhook silindi (ID: ${id})`);
+        res.json({ success: true, message: 'Webhook silindi.' });
+    });
+});
+
+// Belirli Bir Webhook'a Özel Test Mesajı Gönder
+app.post('/api/gizli-yonetim/webhook-test-gonder', async (req, res) => {
+    const { url } = req.body;
+    if (!url) return res.status(400).json({ success: false, error: 'Webhook URL gerekli.' });
+
+    try {
+        await axios.post(url, {
+            content: '🧪 **MomoNews | Admin Panelinden Canlı Test Mesajı**',
+            embeds: [{ title: 'Bağlantı Başarılı!', description: 'Bu webhook admin panelinden başarıyla test edildi.', color: 65280, timestamp: new Date().toISOString() }]
+        });
+        sistemLogKaydet('WEBHOOK_TEST', `Admin panelinden manuel test gönderildi: ${url.substring(0, 30)}...`);
+        res.json({ success: true, message: 'Test mesajı Discord kanalına gönderildi!' });
+    } catch (err) {
+        res.status(500).json({ success: false, error: `Gönderilemedi: ${err.message}` });
+    }
+});
+
+// Diğer Yönetim Endpointleri
 app.get('/api/gizli-yonetim/ayarlar', (req, res) => {
-    res.json({
-        success: true,
-        bakimModu: sistemBakimModunda,
-        taramaDakika: rssDakikaAraligi,
-        kaynaklar: dinamikRssKaynaklari
+    global.rssKaynakVeritabani.find({}, (err, kaynaklar) => {
+        res.json({
+            success: true,
+            bakimModu: global.sistemBakimModunda || false,
+            taramaDakika: global.rssDakikaAraligi || 3,
+            kaynaklar: kaynaklar || []
+        });
+    });
+});
+
+app.get('/api/gizli-yonetim/loglar', (req, res) => {
+    global.logVeritabani.find({}).sort({ tarih: -1 }).limit(100).exec((err, loglar) => {
+        res.json({ success: true, loglar: loglar || [] });
+    });
+});
+
+app.post('/api/gizli-yonetim/loglar-temizle', (req, res) => {
+    global.logVeritabani.remove({}, { multi: true }, () => {
+        sistemLogKaydet('SISTEM', 'Sistem logları temizlendi.');
+        res.json({ success: true, message: 'Loglar temizlendi.' });
     });
 });
 
 app.post('/api/gizli-yonetim/guncelle', (req, res) => {
-    const { sifre, bakimModu, taramaDakika, kaynaklar } = req.body;
-    const GIZLI_ADMIN_SIFRESI = process.env.ADMIN_SECRET || 'momo_gizli_anahtar_123!';
-
-    if (sifre !== GIZLI_ADMIN_SIFRESI) {
-        return res.status(403).json({ success: false, error: 'Erişim engellendi.' });
+    const { bakimModu, taramaDakika, yeniKaynak, silinecekUrl } = req.body;
+    if (typeof bakimModu === 'boolean') global.sistemBakimModunda = bakimModu;
+    if (taramaDakika) {
+        global.rssDakikaAraligi = Number(taramaDakika);
+        taramaZamanlayicisiniGuncelle(global.rssDakikaAraligi);
     }
-
-    if (typeof bakimModu === 'boolean') {
-        sistemBakimModunda = bakimModu;
-    }
-
-    if (taramaDakika && Number(taramaDakika) > 0) {
-        rssDakikaAraligi = Number(taramaDakika);
-        taramaZamanlayicisiniGuncelle(rssDakikaAraligi);
-    }
-
-    if (Array.isArray(kaynaklar)) {
-        dinamikRssKaynaklari = kaynaklar;
-    }
-
-    return res.json({ success: true, message: 'Yönetim ayarları başarıyla güncellendi!' });
+    if (yeniKaynak && yeniKaynak.url) global.rssKaynakVeritabani.insert(yeniKaynak, () => {});
+    if (silinecekUrl) global.rssKaynakVeritabani.remove({ url: silinecekUrl }, {}, () => {});
+    res.json({ success: true, message: 'Güncellendi!' });
 });
 
 app.post('/api/gizli-yonetim', async (req, res) => {
-    const { sifre, islem } = req.body;
-    const GIZLI_ADMIN_SIFRESI = process.env.ADMIN_SECRET || 'momo_gizli_anahtar_123!';
-
-    if (sifre !== GIZLI_ADMIN_SIFRESI) {
-        return res.status(403).json({ success: false, error: 'Erişim engellendi.' });
+    if (req.body.islem === 'rss-tetikle') {
+        global.rssKaynakVeritabani.find({}, async (err, kaynaklar) => {
+            if (kaynaklar) await haberleriCekVeKaydet(kaynaklar);
+        });
+        return res.json({ success: true, message: 'Tarama tetiklendi!' });
     }
-
-    if (islem === 'rss-tetikle') {
-        try {
-            await haberleriCekVeKaydet(dinamikRssKaynaklari);
-            return res.json({ success: true, message: 'Manuel RSS taraması başarıyla tetiklendi ve veritabanı güncellendi!' });
-        } catch (err) {
-            return res.status(500).json({ success: false, error: err.message });
-        }
-    }
-
-    return res.status(400).json({ success: false, error: 'Geçersiz işlem.' });
+    res.status(400).json({ success: false });
 });
 
-// ==========================================
-// SUNUCUYU BAŞLAT
-// ==========================================
-const server = app.listen(PORT, () => {
-    console.log(`🚀 MomoNews Backend http://localhost:${PORT} adresinde çalışıyor.`);
-    console.log('⚡ Dinamik Arka Plan RSS Taraması Aktif.');
+app.listen(PORT, () => {
+    console.log(`🚀 MomoNews Backend başarıyla çalışıyor: http://localhost:${PORT}`);
 });
-
-function sunucuyuKapat() {
-    console.log('🛑 Sunucu kapatılıyor...');
-    clearInterval(keepAliveTimer);
-    if (canliTaramaInterval) clearInterval(canliTaramaInterval);
-
-    server.close(() => {
-        console.log('✅ Sunucu kapatıldı.');
-        process.exit(0);
-    });
-
-    setTimeout(() => {
-        process.exit(1);
-    }, 10000).unref();
-}
-
-process.on('SIGTERM', sunucuyuKapat);
-process.on('SIGINT', sunucuyuKapat);

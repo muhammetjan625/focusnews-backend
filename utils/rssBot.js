@@ -1,106 +1,64 @@
 const Parser = require('rss-parser');
 const axios = require('axios');
-const cheerio = require('cheerio');
 
 const parser = new Parser({
     timeout: 10000, 
-    headers: { 
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'application/rss+xml, application/xml, text/xml; q=0.9, */*; q=0.8'
-    }
+    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36' }
 });
 
-const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1564003986447663107/ut--oCPXhxzq8NlyYWlya09HoLNUmBkidw_SAZMt_1cSeTHsMOx_WawB-CRVCajAOy0n';
+// NeDB veritabanından aktif webhook URL'lerini çeken fonksiyon
+const getActiveWebhooks = () => {
+    return new Promise((resolve) => {
+        if (!global.discordWebhookVeritabani) return resolve([]);
+        global.discordWebhookVeritabani.find({ aktif: true }, (err, docs) => {
+            if (err || !docs) return resolve([]);
+            resolve(docs.map(d => d.url));
+        });
+    });
+};
 
 function metniTemizle(metin) {
     if (!metin) return '';
-    return metin
-        .replace(/&apos;/g, "'")
-        .replace(/&#39;/g, "'")
-        .replace(/&quot;/g, '"')
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&nbsp;/g, ' ');
+    return metin.replace(/&apos;/g, "'").replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
 }
 
 async function discordaHaberGonder(haber) {
-    try {
-        const siteIciLink = `https://momonews.web.app/?haberUrl=${encodeURIComponent(haber.link)}`;
+    const webhookUrls = await getActiveWebhooks();
+    if (webhookUrls.length === 0) return;
 
-        const embed = {
+    const embedPayload = {
+        content: '📰 **MomoNews | Yeni Son Dakika Haberi**',
+        embeds: [{
             title: haber.title,
-            url: siteIciLink, 
-            description: haber.contentSnippet ? haber.contentSnippet.substring(0, 220) + '...' : 'Detaylar ve canlı akış için MomoNews platformunu ziyaret edin.',
-            color: 2315775, 
+            url: haber.link,
+            description: haber.contentSnippet ? haber.contentSnippet.substring(0, 200) + '...' : 'Detaylar için habere tıklayın.',
+            color: 3447003,
             fields: [
-                { name: '📰 Kaynak', value: haber.source || 'MomoNews', inline: true },
-                { name: '📂 Kategori', value: haber.category || 'Gundem', inline: true },
-                { name: '🔗 Orijinal Kaynak', value: `[Git](${haber.link})`, inline: false }
+                { name: 'Kaynak', value: haber.source, inline: true },
+                { name: 'Kategori', value: haber.category, inline: true }
             ],
-            timestamp: new Date().toISOString()
-        };
+            image: haber.imageUrl ? { url: haber.imageUrl } : undefined,
+            timestamp: haber.pubDate
+        }]
+    };
 
-        if (haber.imageUrl) {
-            embed.image = { url: haber.imageUrl };
+    for (const url of webhookUrls) {
+        try {
+            await axios.post(url, embedPayload);
+        } catch (err) {
+            console.error(`❌ Discord webhook gönderim hatası:`, err.message);
         }
-
-        await axios.post(DISCORD_WEBHOOK_URL, {
-            content: "🚨 **MomoNews | Yeni Son Dakika Akışı!**",
-            embeds: [embed]
-        }, { timeout: 8000 });
-    } catch (err) {
-        console.error("⚠️ Discord bildirim hatası:", err.message);
     }
 }
 
-async function haberIceriginiKaziyici(url) {
-    try {
-        const response = await axios.get(url, { 
-            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
-            timeout: 4000 
-        });
-        const $ = cheerio.load(response.data);
-        let butunMetin = [];
+async function haberleriCekVeKaydet(rssKaynaklari) {
+    let eklenenCount = 0;
 
-        $('article p, .haber-metni p, .article-content p, #news-body p, .content p, .post-content p, .nd-content-column p, .detail-content p, .story-body p').each((index, element) => {
-            const metin = $(element).text().trim();
-            const kucukMetin = metin.toLowerCase();
-
-            const yasakliMi = 
-                kucukMetin.includes('telif') || 
-                kucukMetin.includes('tum haklari') || 
-                kucukMetin.includes('izinsiz') || 
-                kucukMetin.includes('kopyalanamaz') || 
-                kucukMetin.includes('abone ol') ||
-                kucukMetin.includes('tiklayin') ||
-                kucukMetin.includes('takip edin') ||
-                kucukMetin.includes('copyright') ||
-                metin.length < 35;
-
-            if (metin.length > 0 && !yasakliMi) {
-                butunMetin.push(metin);
-            }
-        });
-
-        return butunMetin.join('\n\n');
-    } catch (error) {
-        return null;
-    }
-}
-
-async function haberleriCekVeKaydet(rssKaynaklariListesi) {
-    console.log('🔄 RSS KAYNAKLARI TARANIYOR...');
-    let eklenenSayisi = 0;
-    
-    // Eğer dışarıdan liste gönderilmediyse varsayılan bir boş dizi kullan
-    const kaynaklar = rssKaynaklariListesi || [];
-    
-    for (const kaynak of kaynaklar) {
+    for (const kaynak of rssKaynaklari) {
         try {
             const feed = await parser.parseURL(kaynak.url);
-            
-            for (const item of feed.items.slice(0, 6)) {
+
+            for (const item of feed.items.slice(0, 5)) {
                 if (!item.link) continue;
 
                 const varMi = await new Promise((resolve) => {
@@ -109,46 +67,39 @@ async function haberleriCekVeKaydet(rssKaynaklariListesi) {
 
                 if (!varMi) {
                     let resim = '';
-                    if (item.enclosure && item.enclosure.url) {
-                        resim = item.enclosure.url;
-                    } else if (item.content && item.content.match(/src="([^"]+)"/)) {
-                        resim = item.content.match(/src="([^"]+)"/)[1];
-                    }
-
-                    const yedekMetin = item.contentSnippet || item.summary || item.title || "Detaylar kaynak sitede.";
-                    const tamIcerik = await haberIceriginiKaziyici(item.link);
-                    const nihaiIcerik = (tamIcerik && tamIcerik.length > 50) ? tamIcerik : yedekMetin;
-
-                    const safTarih = item.isoDate || item.pubDate || new Date().toISOString();
-                    const standartISOTarih = new Date(safTarih).toISOString();
+                    if (item.enclosure?.url) resim = item.enclosure.url;
+                    else if (item.content?.match(/src="([^"]+)"/)) resim = item.content.match(/src="([^"]+)"/)[1];
 
                     const yeniHaber = {
                         title: metniTemizle(item.title),
                         link: item.link,
-                        pubDate: standartISOTarih,
-                        contentSnippet: metniTemizle(nihaiIcerik),
+                        pubDate: new Date(item.isoDate || item.pubDate || Date.now()).toISOString(),
+                        contentSnippet: metniTemizle(item.contentSnippet || item.title),
                         source: kaynak.source,
                         category: kaynak.category,
                         imageUrl: resim
                     };
 
-                    await new Promise((resolve) => {
-                        global.haberVeritabani.insert(yeniHaber, (err) => {
-                            if (!err) {
-                                console.log(`🔥 [${kaynak.category}] YENİ HABER [${kaynak.source}]: ${yeniHaber.title.substring(0, 25)}...`);
-                                discordaHaberGonder(yeniHaber);
-                                eklenenSayisi++;
-                            }
-                            resolve();
-                        });
+                    global.haberVeritabani.insert(yeniHaber, async (err) => {
+                        if (!err) {
+                            eklenenCount++;
+                            await discordaHaberGonder(yeniHaber);
+                        }
                     });
                 }
             }
-        } catch (error) {
-            console.error(`⚠️ RSS Kaynak Hatası (${kaynak.source} - ${kaynak.category}):`, error.message);
+        } catch (err) {
+            if (global.logVeritabani) {
+                global.logVeritabani.insert({
+                    tip: 'RSS_PARSE_HATA',
+                    mesaj: `Kaynak çekilemedi: ${kaynak.source}`,
+                    detay: { url: kaynak.url, error: err.message },
+                    tarih: new Date().toISOString()
+                });
+            }
         }
     }
-    console.log(`✅ Tarama tamamlandı. Eklenen yeni haber sayısı: ${eklenenSayisi}`);
+    console.log(`✅ RSS Tarama Bitti. Eklenen & Gönderilen: ${eklenenCount}`);
 }
 
 module.exports = haberleriCekVeKaydet;

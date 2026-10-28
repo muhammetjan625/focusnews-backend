@@ -1,0 +1,180 @@
+{"tip":"RSS_BASARI","mesaj":"Tarama tamamlandı. Toplam 0 yeni haber sisteme aktarıldı.","detay":{},"tarih":"2026-10-28T19:57:46.013Z","_id":"0EsQIEdxHHbYMipk"}
+{"tip":"RSS_PARSE_HATA","mesaj":"[TRT Haber] kaynağı okunamadı.","detay":{"url":"https://www.trthaber.com/xml_mobile.php?tur=xml_genel&kategori=bilisim","hata":"Feed not recognized as RSS 1 or 2."},"tarih":"2026-10-28T19:59:09.493Z","_id":"0OtVn04HOju9XdBG"}
+{"tip":"RSS_BASARI","mesaj":"Tarama tamamlandı. Toplam 0 yeni haber sisteme aktarıldı.","detay":{},"tarih":"2026-10-28T20:00:53.080Z","_id":"14aZHN7hHdJmk3gl"}
+{"tip":"RSS_TARAMA","mesaj":"Arka plan RSS haber taraması başlatıldı.","detay":{},"tarih":"2026-10-28T19:59:06.963Z","_id":"1MQ6GD4aDtDwwUt5"}
+{"tip":"SISTEM","mesaj":"Bakım modu durumu değiştirildi: PASİF","detay":{},"tarih":"2026-10-28T19:57:26.424Z","_id":"6p3eI23VFvwuIA0W"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook endpointi tetiklendi.","detay":{"zaman":"2026-10-28T20:04:48.725Z"},"tarih":"2026-10-28T20:04:48.725Z","_id":"7CGZu6cL2cSS00yg"}
+{"tip":"SISTEM","mesaj":"Bakım modu durumu değiştirildi: PASİF","detay":{},"tarih":"2026-10-28T19:57:26.556Z","_id":"9mQqEJC7so2XNCId"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook endpointi başarıyla tetiklendi.","detay":{"zaman":"2026-10-28T20:00:49.151Z","durum":"ONLINE"},"tarih":"2026-10-28T20:00:49.152Z","_id":"CWevcmtOU4QmHHtC"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook endpointi başarıyla tetiklendi.","detay":{"zaman":"2026-10-28T20:00:05.770Z","durum":"ONLINE"},"tarih":"2026-10-28T20:00:05.770Z","_id":"FaDf4RM4vPyxmBjs"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook endpointi başarıyla tetiklendi.","detay":{"zaman":"2026-10-28T19:59:16.990Z","durum":"ONLINE"},"tarih":"2026-10-28T19:59:16.990Z","_id":"KZayhqAN2Gsqfub8"}
+{"tip":"RSS_TARAMA","mesaj":"Arka plan RSS haber taraması başlatıldı.","detay":{},"tarih":"2026-10-28T19:58:26.575Z","_id":"Kr5Cy0LcmAYrzPft"}
+{"tip":"SISTEM","mesaj":"Tarama sıklığı güncellendi: 2 dakika.","detay":{},"tarih":"2026-10-28T19:57:26.424Z","_id":"Kx3SH6G2je4cjnoA"}
+{"tip":"RSS_PARSE_HATA","mesaj":"[TRT Haber] kaynağı okunamadı.","detay":{"url":"https://www.trthaber.com/xml_mobile.php?tur=xml_genel&kategori=bilisim","hata":"Feed not recognized as RSS 1 or 2."},"tarih":"2026-10-28T19:57:44.508Z","_id":"PdW2JspkkStReG4q"}
+{"tip":"RSS_PARSE_HATA","mesaj":"[Anadolu Ajansi] kaynağı okunamadı.","detay":{"url":"https://www.aa.com.tr/tr/rss/default?cat=guncel","hata":"Request timed out after 10000ms"},"tarih":"2026-10-28T19:58:49.239Z","_id":"QXftT8GQoCtegTzB"}
+{"tip":"RSS_BASARI","mesaj":"Tarama tamamlandı. Toplam 0 yeni haber sisteme aktarıldı.","detay":{},"tarih":"2026-10-28T19:58:52.112Z","_id":"SFrtWevXuXRkInwR"}
+{"tip":"RSS_PARSE_HATA","mesaj":"[TRT Haber] kaynağı okunamadı.","detay":{"url":"https://www.trthaber.com/xml_mobile.php?tur=xml_genel&kategori=bilisim","hata":"Feed not recognized as RSS 1 or 2."},"tarih":"2026-10-28T20:00:52.119Z","_id":"Shfabi2qxnDA2qn9"}
+{"tip":"SISTEM","mesaj":"Tarama sıklığı güncellendi: 1 dakika.","detay":{},"tarih":"2026-10-28T19:57:26.557Z","_id":"WKOLMgAsu4pXTkZe"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook endpointi tetiklendi.","detay":{"zaman":"2026-10-28T20:06:48.648Z"},"tarih":"2026-10-28T20:06:48.648Z","_id":"XChJzfR5TmJskP0J"}
+{"tip":"RSS_PARSE_HATA","mesaj":"[Anadolu Ajansi] kaynağı okunamadı.","detay":{"url":"https://www.aa.com.tr/tr/rss/default?cat=ekonomi","hata":"Request timed out after 10000ms"},"tarih":"2026-10-28T19:58:36.598Z","_id":"YthzOoKNHCTGEEwA"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook endpointi tetiklendi.","detay":{"zaman":"2026-10-28T20:02:54.624Z"},"tarih":"2026-10-28T20:02:54.624Z","_id":"ZYbImWGdcqEnU06N"}
+{"tip":"RSS_PARSE_HATA","mesaj":"[Anadolu Ajansi] kaynağı okunamadı.","detay":{"url":"https://www.aa.com.tr/tr/rss/default?cat=dunya","hata":"getaddrinfo ENOTFOUND www.aa.com.tr"},"tarih":"2026-10-28T19:58:37.845Z","_id":"ZqbbICWq1PhzEeSS"}
+{"tip":"SISTEM","mesaj":"Tüm sistem ve haber çekme logları yönetici tarafından temizlendi.","detay":{},"tarih":"2026-10-28T19:57:20.295Z","_id":"aDbtSuRgqpKrNGtL"}
+{"tip":"RSS_BASARI","mesaj":"Tarama tamamlandı. Toplam 0 yeni haber sisteme aktarıldı.","detay":{},"tarih":"2026-10-28T19:59:10.371Z","_id":"aMkE1NjptPTk399M"}
+{"tip":"RSS_BASARI","mesaj":"Tarama bitti: 1 yeni haber eklendi.","detay":{},"tarih":"2026-10-28T20:03:07.682Z","_id":"fULy8u7YigkEWwvT"}
+{"tip":"RSS_TARAMA","mesaj":"Arka plan RSS haber taraması başlatıldı.","detay":{},"tarih":"2026-10-28T19:57:42.460Z","_id":"gfIcr2xNFAtqmfPW"}
+{"tip":"RSS_PARSE_HATA","mesaj":"[TRT Haber] kaynağı okunamadı.","detay":{"url":"https://www.trthaber.com/xml_mobile.php?tur=xml_genel&kategori=bilisim","hata":"Feed not recognized as RSS 1 or 2."},"tarih":"2026-10-28T19:58:49.861Z","_id":"gvhQNdebrVv62btb"}
+{"tip":"RSS_PARSE_HATA","mesaj":"Kaynak çekilemedi: TRT Haber","detay":{"url":"https://www.trthaber.com/xml_mobile.php?tur=xml_genel&kategori=bilisim","error":"Feed not recognized as RSS 1 or 2."},"tarih":"2026-10-28T20:08:10.343Z","_id":"mRkdQelzx4AcCpio"}
+{"tip":"SISTEM","mesaj":"Yönetici panelinden manuel RSS taraması tetiklendi.","detay":{},"tarih":"2026-10-28T19:57:42.459Z","_id":"tHZ7UjrYNmfpFU74"}
+{"tip":"RSS_TARAMA","mesaj":"Arka plan RSS haber taraması başlatıldı.","detay":{},"tarih":"2026-10-28T20:00:50.026Z","_id":"tzinz0KjJy4QzJJ2"}
+{"tip":"RSS_PARSE_HATA","mesaj":"Kaynak çekilemedi: TRT Haber","detay":{"url":"https://www.trthaber.com/xml_mobile.php?tur=xml_genel&kategori=bilisim","error":"Feed not recognized as RSS 1 or 2."},"tarih":"2026-10-28T22:33:13.925Z","_id":"g8nwMHFvwWlrQlqh"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook tetiklendi.","detay":{"zaman":"2026-10-28T22:35:06.751Z"},"tarih":"2026-10-28T22:35:06.751Z","_id":"iToTBP4jWlAffPg1"}
+{"tip":"RSS_PARSE_HATA","mesaj":"Kaynak çekilemedi: TRT Haber","detay":{"url":"https://www.trthaber.com/xml_mobile.php?tur=xml_genel&kategori=bilisim","error":"Feed not recognized as RSS 1 or 2."},"tarih":"2026-10-28T22:36:07.635Z","_id":"soOJYryRD5kRm9Pq"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook tetiklendi.","detay":{"zaman":"2026-10-28T22:37:06.758Z"},"tarih":"2026-10-28T22:37:06.758Z","_id":"zZTDjUR1LEnEAxrx"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook tetiklendi.","detay":{"zaman":"2026-10-28T22:39:06.760Z"},"tarih":"2026-10-28T22:39:06.760Z","_id":"jDgWjSpTTAGyi8wl"}
+{"tip":"RSS_PARSE_HATA","mesaj":"Kaynak çekilemedi: TRT Haber","detay":{"url":"https://www.trthaber.com/xml_mobile.php?tur=xml_genel&kategori=bilisim","error":"Feed not recognized as RSS 1 or 2."},"tarih":"2026-10-28T22:39:07.450Z","_id":"Yy7MbLPe1eINnx6p"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook tetiklendi.","detay":{"zaman":"2026-10-28T22:41:06.765Z"},"tarih":"2026-10-28T22:41:06.765Z","_id":"zK7vxhLBshykbvYL"}
+{"$$deleted":true,"_id":"0EsQIEdxHHbYMipk"}
+{"$$deleted":true,"_id":"0OtVn04HOju9XdBG"}
+{"$$deleted":true,"_id":"14aZHN7hHdJmk3gl"}
+{"$$deleted":true,"_id":"1MQ6GD4aDtDwwUt5"}
+{"$$deleted":true,"_id":"6p3eI23VFvwuIA0W"}
+{"$$deleted":true,"_id":"7CGZu6cL2cSS00yg"}
+{"$$deleted":true,"_id":"9mQqEJC7so2XNCId"}
+{"$$deleted":true,"_id":"CWevcmtOU4QmHHtC"}
+{"$$deleted":true,"_id":"FaDf4RM4vPyxmBjs"}
+{"$$deleted":true,"_id":"KZayhqAN2Gsqfub8"}
+{"$$deleted":true,"_id":"Kr5Cy0LcmAYrzPft"}
+{"$$deleted":true,"_id":"Kx3SH6G2je4cjnoA"}
+{"$$deleted":true,"_id":"PdW2JspkkStReG4q"}
+{"$$deleted":true,"_id":"QXftT8GQoCtegTzB"}
+{"$$deleted":true,"_id":"SFrtWevXuXRkInwR"}
+{"$$deleted":true,"_id":"Shfabi2qxnDA2qn9"}
+{"$$deleted":true,"_id":"WKOLMgAsu4pXTkZe"}
+{"$$deleted":true,"_id":"XChJzfR5TmJskP0J"}
+{"$$deleted":true,"_id":"YthzOoKNHCTGEEwA"}
+{"$$deleted":true,"_id":"Yy7MbLPe1eINnx6p"}
+{"$$deleted":true,"_id":"ZYbImWGdcqEnU06N"}
+{"$$deleted":true,"_id":"ZqbbICWq1PhzEeSS"}
+{"$$deleted":true,"_id":"aDbtSuRgqpKrNGtL"}
+{"$$deleted":true,"_id":"aMkE1NjptPTk399M"}
+{"$$deleted":true,"_id":"fULy8u7YigkEWwvT"}
+{"$$deleted":true,"_id":"g8nwMHFvwWlrQlqh"}
+{"$$deleted":true,"_id":"gfIcr2xNFAtqmfPW"}
+{"$$deleted":true,"_id":"gvhQNdebrVv62btb"}
+{"$$deleted":true,"_id":"iToTBP4jWlAffPg1"}
+{"$$deleted":true,"_id":"jDgWjSpTTAGyi8wl"}
+{"$$deleted":true,"_id":"mRkdQelzx4AcCpio"}
+{"$$deleted":true,"_id":"soOJYryRD5kRm9Pq"}
+{"$$deleted":true,"_id":"tHZ7UjrYNmfpFU74"}
+{"$$deleted":true,"_id":"tzinz0KjJy4QzJJ2"}
+{"$$deleted":true,"_id":"zK7vxhLBshykbvYL"}
+{"$$deleted":true,"_id":"zZTDjUR1LEnEAxrx"}
+{"tip":"SISTEM","mesaj":"Sistem logları temizlendi.","detay":{},"tarih":"2026-10-28T22:41:20.991Z","_id":"L57zjM5wwdA7p1Ub"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook tetiklendi.","detay":{"zaman":"2026-10-28T22:43:06.774Z"},"tarih":"2026-10-28T22:43:06.774Z","_id":"vvAQY0qWivUbnfmw"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook tetiklendi.","detay":{"zaman":"2026-10-28T22:45:06.784Z"},"tarih":"2026-10-28T22:45:06.784Z","_id":"rmnyTozxgdDD4ouL"}
+{"tip":"RSS_PARSE_HATA","mesaj":"Kaynak çekilemedi: TRT Haber","detay":{"url":"https://www.trthaber.com/xml_mobile.php?tur=xml_genel&kategori=bilisim","error":"Feed not recognized as RSS 1 or 2."},"tarih":"2026-10-28T22:45:13.863Z","_id":"R3guLrnRPipYtYRC"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook tetiklendi.","detay":{"zaman":"2026-10-28T22:47:06.795Z"},"tarih":"2026-10-28T22:47:06.795Z","_id":"KZWQ8Ala83CQhYz6"}
+{"tip":"RSS_PARSE_HATA","mesaj":"Kaynak çekilemedi: TRT Haber","detay":{"url":"https://www.trthaber.com/xml_mobile.php?tur=xml_genel&kategori=bilisim","error":"Feed not recognized as RSS 1 or 2."},"tarih":"2026-10-28T22:48:14.373Z","_id":"2xpnbnUVAPm6E1Zi"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook tetiklendi.","detay":{"zaman":"2026-10-28T22:49:06.804Z"},"tarih":"2026-10-28T22:49:06.804Z","_id":"m3Z5bvW3PJzwLZD5"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook tetiklendi.","detay":{"zaman":"2026-10-28T22:51:06.846Z"},"tarih":"2026-10-28T22:51:06.846Z","_id":"AOEz1JjTD1AUYHXd"}
+{"tip":"RSS_PARSE_HATA","mesaj":"Kaynak çekilemedi: TRT Haber","detay":{"url":"https://www.trthaber.com/xml_mobile.php?tur=xml_genel&kategori=bilisim","error":"Feed not recognized as RSS 1 or 2."},"tarih":"2026-10-28T22:51:13.961Z","_id":"gJfTMZ4tCs2eWn5n"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook tetiklendi.","detay":{"zaman":"2026-10-28T22:53:06.891Z"},"tarih":"2026-10-28T22:53:06.891Z","_id":"y5gpTMvwJJFErJjN"}
+{"tip":"RSS_PARSE_HATA","mesaj":"Kaynak çekilemedi: TRT Haber","detay":{"url":"https://www.trthaber.com/xml_mobile.php?tur=xml_genel&kategori=bilisim","error":"Feed not recognized as RSS 1 or 2."},"tarih":"2026-10-28T22:54:13.867Z","_id":"CMx1cPe54hojnuor"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook tetiklendi.","detay":{"zaman":"2026-10-28T22:55:06.874Z"},"tarih":"2026-10-28T22:55:06.874Z","_id":"gX2R2E658ywDZo6M"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook tetiklendi.","detay":{"zaman":"2026-10-28T22:57:06.867Z"},"tarih":"2026-10-28T22:57:06.867Z","_id":"rEijvRrTl0EFZdUO"}
+{"tip":"RSS_PARSE_HATA","mesaj":"Kaynak çekilemedi: TRT Haber","detay":{"url":"https://www.trthaber.com/xml_mobile.php?tur=xml_genel&kategori=bilisim","error":"Feed not recognized as RSS 1 or 2."},"tarih":"2026-10-28T22:57:13.644Z","_id":"yGxHJQj5l2QHLTod"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook tetiklendi.","detay":{"zaman":"2026-10-28T22:59:06.878Z"},"tarih":"2026-10-28T22:59:06.878Z","_id":"TT1dF8Pdsih4uZfG"}
+{"tip":"RSS_PARSE_HATA","mesaj":"Kaynak çekilemedi: TRT Haber","detay":{"url":"https://www.trthaber.com/xml_mobile.php?tur=xml_genel&kategori=bilisim","error":"Feed not recognized as RSS 1 or 2."},"tarih":"2026-10-28T23:00:13.745Z","_id":"SOCF72M3m3994Y5q"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook tetiklendi.","detay":{"zaman":"2026-10-28T23:01:06.876Z"},"tarih":"2026-10-28T23:01:06.876Z","_id":"O6JGWk9WkJQbQocY"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook tetiklendi.","detay":{"zaman":"2026-10-28T23:03:06.892Z"},"tarih":"2026-10-28T23:03:06.892Z","_id":"fK6HOhfsaqJ4STGu"}
+{"tip":"RSS_PARSE_HATA","mesaj":"Kaynak çekilemedi: TRT Haber","detay":{"url":"https://www.trthaber.com/xml_mobile.php?tur=xml_genel&kategori=bilisim","error":"Feed not recognized as RSS 1 or 2."},"tarih":"2026-10-28T23:03:13.563Z","_id":"I1SYGwuygNPvwoo6"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook tetiklendi.","detay":{"zaman":"2026-10-28T23:05:06.895Z"},"tarih":"2026-10-28T23:05:06.895Z","_id":"Ts44OkWpGgFo7Jfz"}
+{"tip":"RSS_PARSE_HATA","mesaj":"Kaynak çekilemedi: TRT Haber","detay":{"url":"https://www.trthaber.com/xml_mobile.php?tur=xml_genel&kategori=bilisim","error":"Feed not recognized as RSS 1 or 2."},"tarih":"2026-10-28T23:06:14.699Z","_id":"wY0Im6YpGAC0SZgY"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook tetiklendi.","detay":{"zaman":"2026-10-28T23:07:06.901Z"},"tarih":"2026-10-28T23:07:06.901Z","_id":"DKpl2UShd5IgT7ZP"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook tetiklendi.","detay":{"zaman":"2026-10-28T23:09:06.910Z"},"tarih":"2026-10-28T23:09:06.910Z","_id":"wB59at9wP5NSZX4f"}
+{"tip":"RSS_PARSE_HATA","mesaj":"Kaynak çekilemedi: TRT Haber","detay":{"url":"https://www.trthaber.com/xml_mobile.php?tur=xml_genel&kategori=bilisim","error":"Feed not recognized as RSS 1 or 2."},"tarih":"2026-10-28T23:09:13.704Z","_id":"LAgdUTyDsOnjHmpR"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook tetiklendi.","detay":{"zaman":"2026-10-28T23:11:06.920Z"},"tarih":"2026-10-28T23:11:06.920Z","_id":"xnIv2BjbtcKMWCy9"}
+{"tip":"RSS_PARSE_HATA","mesaj":"Kaynak çekilemedi: TRT Haber","detay":{"url":"https://www.trthaber.com/xml_mobile.php?tur=xml_genel&kategori=bilisim","error":"Feed not recognized as RSS 1 or 2."},"tarih":"2026-10-28T23:12:14.982Z","_id":"I0yYjXmOI0pxflz5"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook tetiklendi.","detay":{"zaman":"2026-10-28T23:13:06.932Z"},"tarih":"2026-10-28T23:13:06.932Z","_id":"R2b1mILS7VsRl8Y3"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook tetiklendi.","detay":{"zaman":"2026-10-28T23:15:06.952Z"},"tarih":"2026-10-28T23:15:06.952Z","_id":"NQ53fckAxi99V8Xz"}
+{"tip":"RSS_PARSE_HATA","mesaj":"Kaynak çekilemedi: TRT Haber","detay":{"url":"https://www.trthaber.com/xml_mobile.php?tur=xml_genel&kategori=bilisim","error":"Feed not recognized as RSS 1 or 2."},"tarih":"2026-10-28T23:15:13.727Z","_id":"QxAu3Qo8cYKGs1Tj"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook tetiklendi.","detay":{"zaman":"2026-10-28T23:17:06.944Z"},"tarih":"2026-10-28T23:17:06.944Z","_id":"0AhEz6ycWhaQzP8R"}
+{"tip":"RSS_PARSE_HATA","mesaj":"Kaynak çekilemedi: TRT Haber","detay":{"url":"https://www.trthaber.com/xml_mobile.php?tur=xml_genel&kategori=bilisim","error":"Feed not recognized as RSS 1 or 2."},"tarih":"2026-10-28T23:18:14.033Z","_id":"i1PPoWvNErwHBDmn"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook tetiklendi.","detay":{"zaman":"2026-10-28T23:19:06.981Z"},"tarih":"2026-10-28T23:19:06.981Z","_id":"fFt7hzkNLrGu0dnH"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook tetiklendi.","detay":{"zaman":"2026-10-28T23:21:07.002Z"},"tarih":"2026-10-28T23:21:07.002Z","_id":"fyKMKUF4cpClmxrk"}
+{"tip":"RSS_PARSE_HATA","mesaj":"Kaynak çekilemedi: TRT Haber","detay":{"url":"https://www.trthaber.com/xml_mobile.php?tur=xml_genel&kategori=bilisim","error":"Feed not recognized as RSS 1 or 2."},"tarih":"2026-10-28T23:21:14.073Z","_id":"kkhgAXAFeaYP3G6h"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook tetiklendi.","detay":{"zaman":"2026-10-28T23:23:06.979Z"},"tarih":"2026-10-28T23:23:06.979Z","_id":"mVCn1HzgFUZpnmT4"}
+{"tip":"RSS_PARSE_HATA","mesaj":"Kaynak çekilemedi: TRT Haber","detay":{"url":"https://www.trthaber.com/xml_mobile.php?tur=xml_genel&kategori=bilisim","error":"Feed not recognized as RSS 1 or 2."},"tarih":"2026-10-28T23:24:13.746Z","_id":"AcbhxabdXYLWYYKX"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook tetiklendi.","detay":{"zaman":"2026-10-28T23:25:06.988Z"},"tarih":"2026-10-28T23:25:06.988Z","_id":"wbVoOfnOhZvPaQXS"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook tetiklendi.","detay":{"zaman":"2026-10-28T23:27:06.986Z"},"tarih":"2026-10-28T23:27:06.986Z","_id":"pXyYkvb0o6kyAG3p"}
+{"tip":"RSS_PARSE_HATA","mesaj":"Kaynak çekilemedi: TRT Haber","detay":{"url":"https://www.trthaber.com/xml_mobile.php?tur=xml_genel&kategori=bilisim","error":"Feed not recognized as RSS 1 or 2."},"tarih":"2026-10-28T23:27:13.703Z","_id":"rovhDUlNEcmQrruL"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook tetiklendi.","detay":{"zaman":"2026-10-28T23:29:06.995Z"},"tarih":"2026-10-28T23:29:06.995Z","_id":"3qWAWzH1fnozcD6A"}
+{"tip":"RSS_PARSE_HATA","mesaj":"Kaynak çekilemedi: TRT Haber","detay":{"url":"https://www.trthaber.com/xml_mobile.php?tur=xml_genel&kategori=bilisim","error":"Feed not recognized as RSS 1 or 2."},"tarih":"2026-10-28T23:30:13.799Z","_id":"CYljxXzY7Pd7ykWW"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook tetiklendi.","detay":{"zaman":"2026-10-28T23:31:06.996Z"},"tarih":"2026-10-28T23:31:06.996Z","_id":"YqQisZthmL6OCTCA"}
+{"tip":"RSS_PARSE_HATA","mesaj":"Kaynak çekilemedi: TRT Haber","detay":{"url":"https://www.trthaber.com/xml_mobile.php?tur=xml_genel&kategori=bilisim","error":"Feed not recognized as RSS 1 or 2."},"tarih":"2026-10-28T23:31:16.107Z","_id":"vEZKlGvHT9ilxiy1"}
+{"$$deleted":true,"_id":"0AhEz6ycWhaQzP8R"}
+{"$$deleted":true,"_id":"2xpnbnUVAPm6E1Zi"}
+{"$$deleted":true,"_id":"3qWAWzH1fnozcD6A"}
+{"$$deleted":true,"_id":"AOEz1JjTD1AUYHXd"}
+{"$$deleted":true,"_id":"AcbhxabdXYLWYYKX"}
+{"$$deleted":true,"_id":"CMx1cPe54hojnuor"}
+{"$$deleted":true,"_id":"CYljxXzY7Pd7ykWW"}
+{"$$deleted":true,"_id":"DKpl2UShd5IgT7ZP"}
+{"$$deleted":true,"_id":"I0yYjXmOI0pxflz5"}
+{"$$deleted":true,"_id":"I1SYGwuygNPvwoo6"}
+{"$$deleted":true,"_id":"KZWQ8Ala83CQhYz6"}
+{"$$deleted":true,"_id":"L57zjM5wwdA7p1Ub"}
+{"$$deleted":true,"_id":"LAgdUTyDsOnjHmpR"}
+{"$$deleted":true,"_id":"NQ53fckAxi99V8Xz"}
+{"$$deleted":true,"_id":"O6JGWk9WkJQbQocY"}
+{"$$deleted":true,"_id":"QxAu3Qo8cYKGs1Tj"}
+{"$$deleted":true,"_id":"R2b1mILS7VsRl8Y3"}
+{"$$deleted":true,"_id":"R3guLrnRPipYtYRC"}
+{"$$deleted":true,"_id":"SOCF72M3m3994Y5q"}
+{"$$deleted":true,"_id":"TT1dF8Pdsih4uZfG"}
+{"$$deleted":true,"_id":"Ts44OkWpGgFo7Jfz"}
+{"$$deleted":true,"_id":"YqQisZthmL6OCTCA"}
+{"$$deleted":true,"_id":"fFt7hzkNLrGu0dnH"}
+{"$$deleted":true,"_id":"fK6HOhfsaqJ4STGu"}
+{"$$deleted":true,"_id":"fyKMKUF4cpClmxrk"}
+{"$$deleted":true,"_id":"gJfTMZ4tCs2eWn5n"}
+{"$$deleted":true,"_id":"gX2R2E658ywDZo6M"}
+{"$$deleted":true,"_id":"i1PPoWvNErwHBDmn"}
+{"$$deleted":true,"_id":"kkhgAXAFeaYP3G6h"}
+{"$$deleted":true,"_id":"m3Z5bvW3PJzwLZD5"}
+{"$$deleted":true,"_id":"mVCn1HzgFUZpnmT4"}
+{"$$deleted":true,"_id":"pXyYkvb0o6kyAG3p"}
+{"$$deleted":true,"_id":"rEijvRrTl0EFZdUO"}
+{"$$deleted":true,"_id":"rmnyTozxgdDD4ouL"}
+{"$$deleted":true,"_id":"rovhDUlNEcmQrruL"}
+{"$$deleted":true,"_id":"vEZKlGvHT9ilxiy1"}
+{"$$deleted":true,"_id":"vvAQY0qWivUbnfmw"}
+{"$$deleted":true,"_id":"wB59at9wP5NSZX4f"}
+{"$$deleted":true,"_id":"wY0Im6YpGAC0SZgY"}
+{"$$deleted":true,"_id":"wbVoOfnOhZvPaQXS"}
+{"$$deleted":true,"_id":"xnIv2BjbtcKMWCy9"}
+{"$$deleted":true,"_id":"y5gpTMvwJJFErJjN"}
+{"$$deleted":true,"_id":"yGxHJQj5l2QHLTod"}
+{"tip":"SISTEM","mesaj":"Sistem logları temizlendi.","detay":{},"tarih":"2026-10-28T23:31:21.961Z","_id":"AThU2e9YbhDAd40J"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook tetiklendi.","detay":{"zaman":"2026-10-28T23:33:06.998Z"},"tarih":"2026-10-28T23:33:06.998Z","_id":"oJV1fzfvEYgNmJGp"}
+{"tip":"RSS_PARSE_HATA","mesaj":"Kaynak çekilemedi: TRT Haber","detay":{"url":"https://www.trthaber.com/xml_mobile.php?tur=xml_genel&kategori=bilisim","error":"Feed not recognized as RSS 1 or 2."},"tarih":"2026-10-28T23:33:11.198Z","_id":"eVBaGw3jLoZrPC39"}
+{"tip":"RSS_PARSE_HATA","mesaj":"Kaynak çekilemedi: TRT Haber","detay":{"url":"https://www.trthaber.com/xml_mobile.php?tur=xml_genel&kategori=bilisim","error":"Feed not recognized as RSS 1 or 2."},"tarih":"2026-10-28T23:34:10.997Z","_id":"D38boyViXLMnizOO"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook tetiklendi.","detay":{"zaman":"2026-10-28T23:35:07.007Z"},"tarih":"2026-10-28T23:35:07.007Z","_id":"KpZjxojKOyjIjuKg"}
+{"tip":"RSS_PARSE_HATA","mesaj":"Kaynak çekilemedi: TRT Haber","detay":{"url":"https://www.trthaber.com/xml_mobile.php?tur=xml_genel&kategori=bilisim","error":"Feed not recognized as RSS 1 or 2."},"tarih":"2026-10-28T23:35:12.226Z","_id":"ch7hvf6GTrqeuoM1"}
+{"tip":"RSS_PARSE_HATA","mesaj":"Kaynak çekilemedi: TRT Haber","detay":{"url":"https://www.trthaber.com/xml_mobile.php?tur=xml_genel&kategori=bilisim","error":"Feed not recognized as RSS 1 or 2."},"tarih":"2026-10-28T23:36:11.136Z","_id":"FtaHlUhr8ohrqwkc"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook tetiklendi.","detay":{"zaman":"2026-10-28T23:37:07.013Z"},"tarih":"2026-10-28T23:37:07.013Z","_id":"tlLMNgQvRqulZjo4"}
+{"tip":"RSS_PARSE_HATA","mesaj":"Kaynak çekilemedi: TRT Haber","detay":{"url":"https://www.trthaber.com/xml_mobile.php?tur=xml_genel&kategori=bilisim","error":"Feed not recognized as RSS 1 or 2."},"tarih":"2026-10-28T23:37:11.168Z","_id":"46W2BJFfsqAMgCHp"}
+{"tip":"RSS_PARSE_HATA","mesaj":"Kaynak çekilemedi: TRT Haber","detay":{"url":"https://www.trthaber.com/xml_mobile.php?tur=xml_genel&kategori=bilisim","error":"Feed not recognized as RSS 1 or 2."},"tarih":"2026-10-28T23:38:11.249Z","_id":"oNcOgX7r1KAzBJ8G"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook tetiklendi.","detay":{"zaman":"2026-10-28T23:39:07.017Z"},"tarih":"2026-10-28T23:39:07.017Z","_id":"SeMDHQrJg0jTNH41"}
+{"tip":"RSS_PARSE_HATA","mesaj":"Kaynak çekilemedi: TRT Haber","detay":{"url":"https://www.trthaber.com/xml_mobile.php?tur=xml_genel&kategori=bilisim","error":"Feed not recognized as RSS 1 or 2."},"tarih":"2026-10-28T23:39:11.306Z","_id":"YxZcvJH1dmfIjqOT"}
+{"tip":"RSS_PARSE_HATA","mesaj":"Kaynak çekilemedi: TRT Haber","detay":{"url":"https://www.trthaber.com/xml_mobile.php?tur=xml_genel&kategori=bilisim","error":"Feed not recognized as RSS 1 or 2."},"tarih":"2026-10-28T23:40:11.267Z","_id":"SJV6jS7dzyflDwSf"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook tetiklendi.","detay":{"zaman":"2026-10-28T23:41:07.029Z"},"tarih":"2026-10-28T23:41:07.029Z","_id":"OS04un09eAszDg8W"}
+{"tip":"RSS_PARSE_HATA","mesaj":"Kaynak çekilemedi: TRT Haber","detay":{"url":"https://www.trthaber.com/xml_mobile.php?tur=xml_genel&kategori=bilisim","error":"Feed not recognized as RSS 1 or 2."},"tarih":"2026-10-28T23:41:11.496Z","_id":"WvrL2W82vcgWVEl8"}
+{"tip":"RSS_PARSE_HATA","mesaj":"Kaynak çekilemedi: TRT Haber","detay":{"url":"https://www.trthaber.com/xml_mobile.php?tur=xml_genel&kategori=bilisim","error":"Feed not recognized as RSS 1 or 2."},"tarih":"2026-10-28T23:42:12.868Z","_id":"C2i2I3qGz0F9fhnm"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook tetiklendi.","detay":{"zaman":"2026-10-28T23:43:07.038Z"},"tarih":"2026-10-28T23:43:07.038Z","_id":"yrmfeBvShzhgyHIE"}
+{"tip":"RSS_PARSE_HATA","mesaj":"Kaynak çekilemedi: TRT Haber","detay":{"url":"https://www.trthaber.com/xml_mobile.php?tur=xml_genel&kategori=bilisim","error":"Feed not recognized as RSS 1 or 2."},"tarih":"2026-10-28T23:43:11.258Z","_id":"eZSTuHXFHpvXvMqs"}
+{"tip":"RSS_PARSE_HATA","mesaj":"Kaynak çekilemedi: TRT Haber","detay":{"url":"https://www.trthaber.com/xml_mobile.php?tur=xml_genel&kategori=bilisim","error":"Feed not recognized as RSS 1 or 2."},"tarih":"2026-10-28T23:44:11.370Z","_id":"DJI9pFxiSmS01pSr"}
+{"tip":"WEBHOOK_TEST","mesaj":"Test webhook tetiklendi.","detay":{"zaman":"2026-10-28T23:45:07.048Z"},"tarih":"2026-10-28T23:45:07.048Z","_id":"SqiAuLZIuIeIPqL4"}
+{"tip":"RSS_PARSE_HATA","mesaj":"Kaynak çekilemedi: TRT Haber","detay":{"url":"https://www.trthaber.com/xml_mobile.php?tur=xml_genel&kategori=bilisim","error":"Feed not recognized as RSS 1 or 2."},"tarih":"2026-10-28T23:45:12.125Z","_id":"eksWqcULlB6sDNzk"}
+{"tip":"RSS_PARSE_HATA","mesaj":"Kaynak çekilemedi: TRT Haber","detay":{"url":"https://www.trthaber.com/xml_mobile.php?tur=xml_genel&kategori=bilisim","error":"Feed not recognized as RSS 1 or 2."},"tarih":"2026-10-28T23:46:12.331Z","_id":"RUDAAlhN8qOGOLth"}
