@@ -1,18 +1,64 @@
-// backend/utils/rssBot.js
 const Parser = require('rss-parser');
 const axios = require('axios');
 const cheerio = require('cheerio');
 
 const parser = new Parser({
-    timeout: 12000, 
-    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }
+    timeout: 10000, 
+    headers: { 
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/rss+xml, application/xml, text/xml; q=0.9, */*; q=0.8'
+    }
 });
+
+const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1564003986447663107/ut--oCPXhxzq8NlyYWlya09HoLNUmBkidw_SAZMt_1cSeTHsMOx_WawB-CRVCajAOy0n';
+
+function metniTemizle(metin) {
+    if (!metin) return '';
+    return metin
+        .replace(/&apos;/g, "'")
+        .replace(/&#39;/g, "'")
+        .replace(/&quot;/g, '"')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&nbsp;/g, ' ');
+}
+
+async function discordaHaberGonder(haber) {
+    try {
+        const siteIciLink = `https://momonews.web.app/?haberUrl=${encodeURIComponent(haber.link)}`;
+
+        const embed = {
+            title: haber.title,
+            url: siteIciLink, 
+            description: haber.contentSnippet ? haber.contentSnippet.substring(0, 220) + '...' : 'Detaylar ve canlı akış için MomoNews platformunu ziyaret edin.',
+            color: 2315775, 
+            fields: [
+                { name: '📰 Kaynak', value: haber.source || 'MomoNews', inline: true },
+                { name: '📂 Kategori', value: haber.category || 'Gundem', inline: true },
+                { name: '🔗 Orijinal Kaynak', value: `[Git](${haber.link})`, inline: false }
+            ],
+            timestamp: new Date().toISOString()
+        };
+
+        if (haber.imageUrl) {
+            embed.image = { url: haber.imageUrl };
+        }
+
+        await axios.post(DISCORD_WEBHOOK_URL, {
+            content: "🚨 **MomoNews | Yeni Son Dakika Akışı!**",
+            embeds: [embed]
+        }, { timeout: 8000 });
+    } catch (err) {
+        console.error("⚠️ Discord bildirim hatası:", err.message);
+    }
+}
 
 async function haberIceriginiKaziyici(url) {
     try {
         const response = await axios.get(url, { 
             headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
-            timeout: 6000 
+            timeout: 4000 
         });
         const $ = cheerio.load(response.data);
         let butunMetin = [];
@@ -23,11 +69,11 @@ async function haberIceriginiKaziyici(url) {
 
             const yasakliMi = 
                 kucukMetin.includes('telif') || 
-                kucukMetin.includes('tüm hakları') || 
+                kucukMetin.includes('tum haklari') || 
                 kucukMetin.includes('izinsiz') || 
                 kucukMetin.includes('kopyalanamaz') || 
                 kucukMetin.includes('abone ol') ||
-                kucukMetin.includes('tıklayın') ||
+                kucukMetin.includes('tiklayin') ||
                 kucukMetin.includes('takip edin') ||
                 kucukMetin.includes('copyright') ||
                 metin.length < 35;
@@ -43,40 +89,18 @@ async function haberIceriginiKaziyici(url) {
     }
 }
 
-// 🎯 EN GÜNCEL SON DAKİKA VE AA ODAKLI YENİ LİSTE
-const RSS_KAYNAKLARI = [
-    // 🚨 EN SEÇKİN SON DAKİKA AKIŞLARI (Her Zaman En Üstte)
-    { url: 'https://www.aa.com.tr/tr/rss/default?cat=guncel', source: 'Anadolu Ajansı', category: 'Gundem' },
-    { url: 'https://www.trthaber.com/sondakika_articles.rss', source: 'TRT Haber', category: 'Gundem' },
-    { url: 'https://www.haberturk.com/rss', source: 'Habertürk', category: 'Gundem' },
-    { url: 'https://www.sondakika.com/rss/', source: 'SonDakika.com', category: 'Gundem' },
-    { url: 'https://rss.haberler.com/rss.asp', source: 'Haberler.com', category: 'Gundem' },
-
-    // 📉 Ekonomi Son Dakika
-    { url: 'https://www.trthaber.com/ekonomi_articles.rss', source: 'TRT Haber', category: 'Ekonomi' },
-    { url: 'https://www.haberturk.com/rss/ekonomi.xml', source: 'Habertürk', category: 'Ekonomi' },
-    { url: 'https://feeds.reuters.com/news/economy', source: 'Reuters', category: 'Ekonomi' },
-
-    // 💻 Teknoloji & Oyun Son Dakika
-    { url: 'https://www.trthaber.com/bilim_teknoloji_articles.rss', source: 'TRT Haber', category: 'Teknoloji' },
-    { url: 'https://www.theverge.com/rss/index.xml', source: 'The Verge', category: 'Teknoloji' },
-    { url: 'https://techcrunch.com/feed/', source: 'TechCrunch', category: 'Teknoloji' },
-    { url: 'https://www.ign.com/rss', source: 'IGN', category: 'Teknoloji' },
-
-    // ⚽ Spor Son Dakika
-    { url: 'https://www.trthaber.com/spor_articles.rss', source: 'TRT Haber', category: 'Spor' },
-    { url: 'https://www.haberturk.com/rss/spor.xml', source: 'Habertürk', category: 'Spor' },
-    { url: 'https://www.goal.com/feeds/en/news', source: 'Goal.com', category: 'Spor' }
-];
-
-async function haberleriCekVeKaydet() {
-    console.log('🔄 CANLI SON DAKİKA HAVUZU TARANIYOR...');
+async function haberleriCekVeKaydet(rssKaynaklariListesi) {
+    console.log('🔄 RSS KAYNAKLARI TARANIYOR...');
+    let eklenenSayisi = 0;
     
-    for (const kaynak of RSS_KAYNAKLARI) {
+    // Eğer dışarıdan liste gönderilmediyse varsayılan bir boş dizi kullan
+    const kaynaklar = rssKaynaklariListesi || [];
+    
+    for (const kaynak of kaynaklar) {
         try {
             const feed = await parser.parseURL(kaynak.url);
             
-            for (const item of feed.items.slice(0, 15)) {
+            for (const item of feed.items.slice(0, 6)) {
                 if (!item.link) continue;
 
                 const varMi = await new Promise((resolve) => {
@@ -85,37 +109,46 @@ async function haberleriCekVeKaydet() {
 
                 if (!varMi) {
                     let resim = '';
-                    if (item.enclosure && item.enclosure.url) resim = item.enclosure.url;
-                    else if (item.content && item.content.match(/src="([^"]+)"/)) resim = item.content.match(/src="([^"]+)"/)[1];
+                    if (item.enclosure && item.enclosure.url) {
+                        resim = item.enclosure.url;
+                    } else if (item.content && item.content.match(/src="([^"]+)"/)) {
+                        resim = item.content.match(/src="([^"]+)"/)[1];
+                    }
 
-                    const tamIcerik = await haberIceriginiKaziyici(item.link);
                     const yedekMetin = item.contentSnippet || item.summary || item.title || "Detaylar kaynak sitede.";
-                    const nihaiIcerik = tamIcerik && tamIcerik.length > 50 ? tamIcerik : yedekMetin;
+                    const tamIcerik = await haberIceriginiKaziyici(item.link);
+                    const nihaiIcerik = (tamIcerik && tamIcerik.length > 50) ? tamIcerik : yedekMetin;
 
-                    // 🎯 ZAMANSAL KİLİT NOKTASI: Tarihi mutlak bir JavaScript Tarih objesine çevirip ISO formatında kaydediyoruz.
-                    // Bu sayede .sort({ pubDate: -1 }) kodu %100 kusursuz ve en yeniye göre sıralayacak kanka.
                     const safTarih = item.isoDate || item.pubDate || new Date().toISOString();
                     const standartISOTarih = new Date(safTarih).toISOString();
 
                     const yeniHaber = {
-                        title: item.title,
+                        title: metniTemizle(item.title),
                         link: item.link,
-                        pubDate: standartISOTarih, // Jilet gibi standart zaman stamp'i
-                        contentSnippet: nihaiIcerik,
+                        pubDate: standartISOTarih,
+                        contentSnippet: metniTemizle(nihaiIcerik),
                         source: kaynak.source,
                         category: kaynak.category,
                         imageUrl: resim
                     };
 
-                    global.haberVeritabani.insert(yeniHaber, (err) => {
-                        if (!err) console.log(`🔥 SON DAKİKA ALINDI [${kaynak.source}]: ${item.title.substring(0, 25)}...`);
+                    await new Promise((resolve) => {
+                        global.haberVeritabani.insert(yeniHaber, (err) => {
+                            if (!err) {
+                                console.log(`🔥 [${kaynak.category}] YENİ HABER [${kaynak.source}]: ${yeniHaber.title.substring(0, 25)}...`);
+                                discordaHaberGonder(yeniHaber);
+                                eklenenSayisi++;
+                            }
+                            resolve();
+                        });
                     });
                 }
             }
         } catch (error) {
-            // Hatalı akışları sessizce atla
+            console.error(`⚠️ RSS Kaynak Hatası (${kaynak.source} - ${kaynak.category}):`, error.message);
         }
     }
+    console.log(`✅ Tarama tamamlandı. Eklenen yeni haber sayısı: ${eklenenSayisi}`);
 }
 
 module.exports = haberleriCekVeKaydet;
