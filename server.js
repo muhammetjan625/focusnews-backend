@@ -6,6 +6,7 @@ if (typeof util.isDate !== 'function') {
 
 const express = require('express');
 const cors = require('cors');
+app.use(cors());
 const Datastore = require('nedb');
 const path = require('path');
 const axios = require('axios');
@@ -15,6 +16,9 @@ const haberleriCekVeKaydet = require('./utils/rssBot');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`🚀 MomoNews Backend aktif: port ${PORT}`);
+});
 
 // ==========================================
 // 📂 VERİTABANLARI (NeDB)
