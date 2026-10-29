@@ -1,5 +1,13 @@
 const Parser = require('rss-parser');
 const axios = require('axios');
+const https = require('https');
+
+// SSL sertifika doğrulama hatalarını ve ağ kısıtlamalarını bypass eden özel agent
+const httpsAgent = new https.Agent({
+    rejectUnauthorized: false, // self-signed certificate hatalarını çözer
+    keepAlive: true,
+    timeout: 15000
+});
 
 const parser = new Parser({
     timeout: 10000, 
@@ -44,7 +52,10 @@ async function discordaHaberGonder(haber) {
 
     for (const url of webhookUrls) {
         try {
-            await axios.post(url, embedPayload);
+            await axios.post(url, embedPayload, {
+                httpsAgent: httpsAgent,
+                timeout: 10000
+            });
         } catch (err) {
             console.error(`❌ Discord webhook gönderim hatası:`, err.message);
         }

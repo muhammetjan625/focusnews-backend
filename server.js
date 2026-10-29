@@ -9,6 +9,7 @@ const cors = require('cors');
 const Datastore = require('nedb');
 const path = require('path');
 const axios = require('axios');
+const https = require('https');
 require('dotenv').config();
 
 const haberleriCekVeKaydet = require('./utils/rssBot');
@@ -17,8 +18,15 @@ const haberleriCekVeKaydet = require('./utils/rssBot');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// SSL sertifika doğrulama hatalarını bypass eden özel agent (Admin panelinden testler için)
+const httpsAgent = new https.Agent({
+    rejectUnauthorized: false,
+    keepAlive: true,
+    timeout: 10000
+});
+
 // ==========================================
-// 🛡️ MİDDLEWARE (Önce app tanımlandığı için şimdi güvenle çağrılır)
+// 🛡️ MİDDLEWARE
 // ==========================================
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '50kb' }));
@@ -113,7 +121,7 @@ const aktifWebhooksGetir = () => {
 };
 
 // ==========================================
-// ⏱️ OTOMATİK ZAMANLAYICI
+// ⏱️ OTOMATİK ZAMANLAYICI (Sadece RSS Taraması Yapar)
 // ==========================================
 global.rssDakikaAraligi = 3;
 let canliTaramaInterval = null;
@@ -156,14 +164,14 @@ app.post('/api/geribildirim', async (req, res) => {
     };
 
     for (const url of webhookUrls) {
-        try { await axios.post(url, embedPayload); } catch (e) {}
+        try { await axios.post(url, embedPayload, { httpsAgent }); } catch (e) {}
     }
 
     sistemLogKaydet('GERIBILDIRIM', 'Yeni geri bildirim Discord kanallarına iletildi.');
     res.json({ success: true });
 });
 
-// 2. Test Webhook Endpointi
+// 2. Test Webhook Endpointi (Artık sadece manuel tetiklendiğinde çalışır)
 app.get('/api/test-webhook', async (req, res) => {
     const testZamani = new Date().toISOString();
     sistemLogKaydet('WEBHOOK_TEST', 'Test webhook tetiklendi.', { zaman: testZamani });
@@ -175,22 +183,16 @@ app.get('/api/test-webhook', async (req, res) => {
     };
 
     for (const url of webhookUrls) {
-        try { await axios.post(url, embedPayload); } catch (e) {}
+        try { await axios.post(url, embedPayload, { httpsAgent }); } catch (e) {}
     }
 
     res.json({ success: true, message: 'Test webhook tetiklendi!', timestamp: testZamani });
 });
 
-// Heartbeat
-setInterval(() => {
-    axios.get(`http://localhost:${PORT}/api/test-webhook`).catch(() => {});
-}, 2 * 60 * 1000);
-
 // ==========================================
 // 🛠️ YÖNETİM PANELİ (WEBHOOK & RSS CRUD)
 // ==========================================
 
-// Webhook'ları Listele
 app.get('/api/gizli-yonetim/webhooks', (req, res) => {
     global.discordWebhookVeritabani.find({}, (err, docs) => {
         if (err) return res.status(500).json({ success: false, error: err.message });
@@ -198,7 +200,6 @@ app.get('/api/gizli-yonetim/webhooks', (req, res) => {
     });
 });
 
-// Yeni Webhook Ekle
 app.post('/api/gizli-yonetim/webhook-ekle', (req, res) => {
     const { isim, url } = req.body;
     if (!url || !isim) return res.status(400).json({ success: false, error: 'İsim ve URL zorunludur.' });
@@ -210,7 +211,6 @@ app.post('/api/gizli-yonetim/webhook-ekle', (req, res) => {
     });
 });
 
-// Webhook Sil
 app.post('/api/gizli-yonetim/webhook-sil', (req, res) => {
     const { id } = req.body;
     if (!id) return res.status(400).json({ success: false, error: 'ID gerekli.' });
@@ -222,7 +222,6 @@ app.post('/api/gizli-yonetim/webhook-sil', (req, res) => {
     });
 });
 
-// Belirli Bir Webhook'a Özel Test Mesajı Gönder
 app.post('/api/gizli-yonetim/webhook-test-gonder', async (req, res) => {
     const { url } = req.body;
     if (!url) return res.status(400).json({ success: false, error: 'Webhook URL gerekli.' });
@@ -231,7 +230,7 @@ app.post('/api/gizli-yonetim/webhook-test-gonder', async (req, res) => {
         await axios.post(url, {
             content: '🧪 **MomoNews | Admin Panelinden Canlı Test Mesajı**',
             embeds: [{ title: 'Bağlantı Başarılı!', description: 'Bu webhook admin panelinden başarıyla test edildi.', color: 65280, timestamp: new Date().toISOString() }]
-        });
+        }, { httpsAgent });
         sistemLogKaydet('WEBHOOK_TEST', `Admin panelinden manuel test gönderildi: ${url.substring(0, 30)}...`);
         res.json({ success: true, message: 'Test mesajı Discord kanalına gönderildi!' });
     } catch (err) {
@@ -239,7 +238,6 @@ app.post('/api/gizli-yonetim/webhook-test-gonder', async (req, res) => {
     }
 });
 
-// Diğer Yönetim Endpointleri
 app.get('/api/gizli-yonetim/ayarlar', (req, res) => {
     global.rssKaynakVeritabani.find({}, (err, kaynaklar) => {
         res.json({
@@ -286,7 +284,7 @@ app.post('/api/gizli-yonetim', async (req, res) => {
     res.status(400).json({ success: false });
 });
 
-// TEK VE DOĞRU LİSTENER (Sunucuyu Sadece Burada Başlatıyoruz)
+// SUNUCUYU BAŞLAT
 app.listen(PORT, () => {
     console.log(`🚀 MomoNews Backend başarıyla çalışıyor: http://localhost:${PORT}`);
 });
