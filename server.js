@@ -6,7 +6,6 @@ if (typeof util.isDate !== 'function') {
 
 const express = require('express');
 const cors = require('cors');
-app.use(cors());
 const Datastore = require('nedb');
 const path = require('path');
 const axios = require('axios');
@@ -14,11 +13,15 @@ require('dotenv').config();
 
 const haberleriCekVeKaydet = require('./utils/rssBot');
 
+// 1. ÖNCE APP OLUŞTURULUR
 const app = express();
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`🚀 MomoNews Backend aktif: port ${PORT}`);
-});
+
+// ==========================================
+// 🛡️ MİDDLEWARE (Önce app tanımlandığı için şimdi güvenle çağrılır)
+// ==========================================
+app.use(cors({ origin: true, credentials: true }));
+app.use(express.json({ limit: '50kb' }));
 
 // ==========================================
 // 📂 VERİTABANLARI (NeDB)
@@ -93,12 +96,6 @@ global.rssKaynakVeritabani.count({}, (err, count) => {
         });
     }
 });
-
-// ==========================================
-// 🛡️ MİDDLEWARE & LOGLAMA
-// ==========================================
-app.use(cors({ origin: true, credentials: true }));
-app.use(express.json({ limit: '50kb' }));
 
 function sistemLogKaydet(tip, mesaj, detay = {}) {
     const logKaydi = { tip, mesaj, detay, tarih: new Date().toISOString() };
@@ -280,7 +277,7 @@ app.post('/api/gizli-yonetim/guncelle', (req, res) => {
 });
 
 app.post('/api/gizli-yonetim', async (req, res) => {
-    if (req.body.islem === 'rss-tetikle') {
+    if (req.body.islem === 'rss-tetiketle' || req.body.islem === 'rss-tetikle') {
         global.rssKaynakVeritabani.find({}, async (err, kaynaklar) => {
             if (kaynaklar) await haberleriCekVeKaydet(kaynaklar);
         });
@@ -289,6 +286,7 @@ app.post('/api/gizli-yonetim', async (req, res) => {
     res.status(400).json({ success: false });
 });
 
+// TEK VE DOĞRU LİSTENER (Sunucuyu Sadece Burada Başlatıyoruz)
 app.listen(PORT, () => {
     console.log(`🚀 MomoNews Backend başarıyla çalışıyor: http://localhost:${PORT}`);
 });
