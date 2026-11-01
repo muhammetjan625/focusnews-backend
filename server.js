@@ -14,15 +14,14 @@ require('dotenv').config();
 
 const haberleriCekVeKaydet = require('./utils/rssBot');
 
-// 1. ÖNCE APP OLUŞTURULUR
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// SSL sertifika doğrulama hatalarını bypass eden özel agent (Admin panelinden testler için)
+// Custom HTTPS Agent for Render
 const httpsAgent = new https.Agent({
     rejectUnauthorized: false,
     keepAlive: true,
-    timeout: 10000
+    timeout: 15000
 });
 
 // ==========================================
@@ -49,7 +48,6 @@ global.logVeritabani = new Datastore({
     autoload: true
 });
 
-// Yeni Discord Webhook Veritabanı
 global.discordWebhookVeritabani = new Datastore({
     filename: path.resolve(__dirname, 'discord_webhooks.db'),
     autoload: true
@@ -58,24 +56,6 @@ global.discordWebhookVeritabani = new Datastore({
 global.haberVeritabani.ensureIndex({ fieldName: 'link', unique: true });
 global.rssKaynakVeritabani.ensureIndex({ fieldName: 'url', unique: true });
 global.discordWebhookVeritabani.ensureIndex({ fieldName: 'url', unique: true });
-
-// Varsayılan Webhook'ları .env'den yükle (Eğer DB boşsa)
-global.discordWebhookVeritabani.count({}, (err, count) => {
-    if (count === 0 && process.env.DISCORD_WEBHOOK_URLS) {
-        const envUrls = process.env.DISCORD_WEBHOOK_URLS.split(',').map(u => u.trim()).filter(Boolean);
-        const defaultHooks = envUrls.map((url, i) => ({
-            isim: `Discord Kanalı ${i + 1}`,
-            url: url,
-            aktif: true,
-            eklenmeTarihi: new Date().toISOString()
-        }));
-        if (defaultHooks.length > 0) {
-            global.discordWebhookVeritabani.insert(defaultHooks, () => {
-                console.log('✅ Varsayılan Discord webhooklar veritabanına aktarıldı.');
-            });
-        }
-    }
-});
 
 // Varsayılan RSS Kaynakları
 const varsayilanKaynaklar = [
@@ -97,21 +77,12 @@ const varsayilanKaynaklar = [
     { url: 'https://www.haberturk.com/rss/spor.xml', source: 'Haberturk', category: 'Spor' }
 ];
 
-global.rssKaynakVeritabani.count({}, (err, count) => {
-    if (count === 0) {
-        global.rssKaynakVeritabani.insert(varsayilanKaynaklar, () => {
-            console.log('✅ Varsayılan RSS kaynakları DB-ye yüklendi.');
-        });
-    }
-});
-
 function sistemLogKaydet(tip, mesaj, detay = {}) {
     const logKaydi = { tip, mesaj, detay, tarih: new Date().toISOString() };
     global.logVeritabani.insert(logKaydi);
     console.log(`[LOG - ${tip}]: ${mesaj}`);
 }
 
-// Aktif webhook'ları dizi olarak getiren yardımcı
 const aktifWebhooksGetir = () => {
     return new Promise((resolve) => {
         global.discordWebhookVeritabani.find({ aktif: true }, (err, docs) => {
@@ -121,7 +92,7 @@ const aktifWebhooksGetir = () => {
 };
 
 // ==========================================
-// ⏱️ OTOMATİK ZAMANLAYICI (Sadece RSS Taraması Yapar)
+// ⏱️ ZAMANLAYICI VE BAŞLATMA MİMARİSİ
 // ==========================================
 global.rssDakikaAraligi = 3;
 let canliTaramaInterval = null;
@@ -130,17 +101,60 @@ function taramaZamanlayicisiniGuncelle(dakika) {
     if (canliTaramaInterval) clearInterval(canliTaramaInterval);
     canliTaramaInterval = setInterval(() => {
         global.rssKaynakVeritabani.find({}, async (err, kaynaklar) => {
-            if (kaynaklar && kaynaklar.length > 0) await haberleriCekVeKaydet(kaynaklar);
+            if (kaynaklar && kaynaklar.length > 0) {
+                await haberleriCekVeKaydet(kaynaklar);
+            }
         });
     }, Number(dakika) * 60 * 1000);
 }
-taramaZamanlayicisiniGuncelle(global.rssDakikaAraligi);
 
-setTimeout(() => {
-    global.rssKaynakVeritabani.find({}, async (err, kaynaklar) => {
-        if (kaynaklar && kaynaklar.length > 0) await haberleriCekVeKaydet(kaynaklar);
+function renderSistemiBaslat() {
+    // 1. Webhook Kontrolü & Yükleme
+    global.discordWebhookVeritabani.count({}, (err, count) => {
+        if (count === 0 && process.env.DISCORD_WEBHOOK_URLS) {
+            const envUrls = process.env.DISCORD_WEBHOOK_URLS.split(',').map(u => u.trim()).filter(Boolean);
+            const defaultHooks = envUrls.map((url, i) => ({
+                isim: `Discord Kanalı ${i + 1}`,
+                url: url,
+                aktif: true,
+                eklenmeTarihi: new Date().toISOString()
+            }));
+            if (defaultHooks.length > 0) {
+                global.discordWebhookVeritabani.insert(defaultHooks, () => {
+                    console.log('✅ Varsayılan Discord webhooklar yüklendi.');
+                });
+            }
+        }
     });
-}, 3000);
+
+    // 2. RSS Kaynak Kontrolü & İlk Tarama
+    global.rssKaynakVeritabani.count({}, (err, count) => {
+        if (count === 0) {
+            global.rssKaynakVeritabani.insert(varsayilanKaynaklar, (err) => {
+                if (!err) {
+                    console.log('✅ Varsayılan RSS kaynakları DB-ye yazıldı.');
+                    ilkTaramayiCalistir();
+                }
+            });
+        } else {
+            console.log('✅ RSS kaynakları veritabanında hazır.');
+            ilkTaramayiCalistir();
+        }
+    });
+}
+
+function ilkTaramayiCalistir() {
+    global.rssKaynakVeritabani.find({}, async (err, kaynaklar) => {
+        if (kaynaklar && kaynaklar.length > 0) {
+            console.log(`🚀 Render sunucusu ilk RSS taramasını tetikliyor...`);
+            await haberleriCekVeKaydet(kaynaklar);
+        }
+    });
+}
+
+// Zamanlayıcıyı kur ve sistemi 2 saniye gecikmeyle (disk hazır olunca) başlat
+taramaZamanlayicisiniGuncelle(global.rssDakikaAraligi);
+setTimeout(renderSistemiBaslat, 2000);
 
 // ==========================================
 // 🌐 API ENDPOINTLERİ
@@ -152,7 +166,6 @@ app.get('/api/haberler', (req, res) => {
     });
 });
 
-// 1. Geri Bildirim Endpointi
 app.post('/api/geribildirim', async (req, res) => {
     const { mesaj } = req.body;
     if (!mesaj) return res.status(400).json({ success: false, error: 'Mesaj boş olamaz.' });
@@ -164,14 +177,18 @@ app.post('/api/geribildirim', async (req, res) => {
     };
 
     for (const url of webhookUrls) {
-        try { await axios.post(url, embedPayload, { httpsAgent }); } catch (e) {}
+        try {
+            await axios.post(url, embedPayload, {
+                httpsAgent,
+                headers: { 'Content-Type': 'application/json', 'User-Agent': 'DiscordBot (1.0)' }
+            });
+        } catch (e) {}
     }
 
     sistemLogKaydet('GERIBILDIRIM', 'Yeni geri bildirim Discord kanallarına iletildi.');
     res.json({ success: true });
 });
 
-// 2. Test Webhook Endpointi (Artık sadece manuel tetiklendiğinde çalışır)
 app.get('/api/test-webhook', async (req, res) => {
     const testZamani = new Date().toISOString();
     sistemLogKaydet('WEBHOOK_TEST', 'Test webhook tetiklendi.', { zaman: testZamani });
@@ -183,16 +200,20 @@ app.get('/api/test-webhook', async (req, res) => {
     };
 
     for (const url of webhookUrls) {
-        try { await axios.post(url, embedPayload, { httpsAgent }); } catch (e) {}
+        try {
+            await axios.post(url, embedPayload, {
+                httpsAgent,
+                headers: { 'Content-Type': 'application/json', 'User-Agent': 'DiscordBot (1.0)' }
+            });
+        } catch (e) {}
     }
 
     res.json({ success: true, message: 'Test webhook tetiklendi!', timestamp: testZamani });
 });
 
 // ==========================================
-// 🛠️ YÖNETİM PANELİ (WEBHOOK & RSS CRUD)
+// 🛠️ YÖNETİM PANELİ ENDPOINTLERİ
 // ==========================================
-
 app.get('/api/gizli-yonetim/webhooks', (req, res) => {
     global.discordWebhookVeritabani.find({}, (err, docs) => {
         if (err) return res.status(500).json({ success: false, error: err.message });
@@ -230,7 +251,10 @@ app.post('/api/gizli-yonetim/webhook-test-gonder', async (req, res) => {
         await axios.post(url, {
             content: '🧪 **MomoNews | Admin Panelinden Canlı Test Mesajı**',
             embeds: [{ title: 'Bağlantı Başarılı!', description: 'Bu webhook admin panelinden başarıyla test edildi.', color: 65280, timestamp: new Date().toISOString() }]
-        }, { httpsAgent });
+        }, {
+            httpsAgent,
+            headers: { 'Content-Type': 'application/json', 'User-Agent': 'DiscordBot (1.0)' }
+        });
         sistemLogKaydet('WEBHOOK_TEST', `Admin panelinden manuel test gönderildi: ${url.substring(0, 30)}...`);
         res.json({ success: true, message: 'Test mesajı Discord kanalına gönderildi!' });
     } catch (err) {

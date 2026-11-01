@@ -2,19 +2,18 @@ const Parser = require('rss-parser');
 const axios = require('axios');
 const https = require('https');
 
-// SSL sertifika doğrulama hatalarını ve ağ kısıtlamalarını bypass eden özel agent
+// Render ağ kısıtlamalarını ve SSL engellerini bypass eden özel agent
 const httpsAgent = new https.Agent({
-    rejectUnauthorized: false, // self-signed certificate hatalarını çözer
+    rejectUnauthorized: false,
     keepAlive: true,
-    timeout: 15000
+    timeout: 20000
 });
 
 const parser = new Parser({
-    timeout: 10000, 
-    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36' }
+    timeout: 15000, 
+    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/122.0.0.0 Safari/537.36' }
 });
 
-// NeDB veritabanından aktif webhook URL'lerini çeken fonksiyon
 const getActiveWebhooks = () => {
     return new Promise((resolve) => {
         if (!global.discordWebhookVeritabani) return resolve([]);
@@ -27,9 +26,15 @@ const getActiveWebhooks = () => {
 
 function metniTemizle(metin) {
     if (!metin) return '';
-    return metin.replace(/&apos;/g, "'").replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+    return metin.replace(/&apos;/g, "'")
+                .replace(/&#39;/g, "'")
+                .replace(/&quot;/g, '"')
+                .replace(/&amp;/g, '&')
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>');
 }
 
+// Discord'a takılmadan, güvenli gönderim fonksiyonu
 async function discordaHaberGonder(haber) {
     const webhookUrls = await getActiveWebhooks();
     if (webhookUrls.length === 0) return;
@@ -53,25 +58,40 @@ async function discordaHaberGonder(haber) {
     for (const url of webhookUrls) {
         try {
             await axios.post(url, embedPayload, {
-                httpsAgent: httpsAgent,
-                timeout: 10000
+                httpsAgent,
+                timeout: 10000,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'DiscordBot (https://github.com/discord/discord-api-docs, 1.0)'
+                }
             });
+            // İstekler arası minik nefes payı (Discord rate limit ve blok yememek için)
+            await new Promise(r => setTimeout(r, 3005));
         } catch (err) {
-            console.error(`❌ Discord webhook gönderim hatası:`, err.message);
+            console.error(`❌ Discord webhook gönderim hatası (${haber.source}):`, err.message);
         }
     }
 }
 
 async function haberleriCekVeKaydet(rssKaynaklari) {
     let eklenenCount = 0;
+    console.log(`🔄 RSS Tarama döngüsü başladı. Toplam kaynak: ${rssKaynaklari.length}`);
 
     for (const kaynak of rssKaynaklari) {
         try {
-            const feed = await parser.parseURL(kaynak.url);
+            // Render üzerinde doğrudan parseURL yerine Axios + httpsAgent kullanıyoruz
+            const response = await axios.get(kaynak.url, {
+                httpsAgent,
+                headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/122.0.0.0 Safari/537.36' },
+                timeout: 15000
+            });
+
+            const feed = await parser.parseString(response.data);
 
             for (const item of feed.items.slice(0, 5)) {
                 if (!item.link) continue;
 
+                // Veritabanında var mı kontrolü (Senkronize Promise yapısı)
                 const varMi = await new Promise((resolve) => {
                     global.haberVeritabani.findOne({ link: item.link }, (err, doc) => resolve(doc));
                 });
@@ -91,15 +111,20 @@ async function haberleriCekVeKaydet(rssKaynaklari) {
                         imageUrl: resim
                     };
 
-                    global.haberVeritabani.insert(yeniHaber, async (err) => {
-                        if (!err) {
-                            eklenenCount++;
-                            await discordaHaberGonder(yeniHaber);
-                        }
+                    // Haberi veritabanına ekle ve sırayla Discord'a yolla
+                    await new Promise((resolve) => {
+                        global.haberVeritabani.insert(yeniHaber, async (err) => {
+                            if (!err) {
+                                eklenenCount++;
+                                await discordaHaberGonder(yeniHaber);
+                            }
+                            resolve();
+                        });
                     });
                 }
             }
         } catch (err) {
+            console.error(`❌ RSS Kaynak Hatası [${kaynak.source}]:`, err.message);
             if (global.logVeritabani) {
                 global.logVeritabani.insert({
                     tip: 'RSS_PARSE_HATA',
@@ -110,7 +135,7 @@ async function haberleriCekVeKaydet(rssKaynaklari) {
             }
         }
     }
-    console.log(`✅ RSS Tarama Bitti. Eklenen & Gönderilen: ${eklenenCount}`);
+    console.log(`✅ RSS Tarama Tamamlandı. Eklenen & Gönderilen Yeni Haber: ${eklenenCount}`);
 }
 
 module.exports = haberleriCekVeKaydet;
