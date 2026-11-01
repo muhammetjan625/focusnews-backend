@@ -1,0 +1,4 @@
+{"tip":"RSS_PARSE_HATA","mesaj":"Kaynak çekilemedi: Haberturk","detay":{"url":"https://www.haberturk.com/rss/ekonomi.xml","error":"timeout of 15000ms exceeded"},"tarih":"2026-11-01T12:56:33.270Z","_id":"VHuu80cKb4TzPSln"}
+{"tip":"RSS_PARSE_HATA","mesaj":"Kaynak çekilemedi: Anadolu Ajansi","detay":{"url":"https://www.aa.com.tr/tr/rss/default?cat=ekonomi","error":"getaddrinfo ENOTFOUND www.aa.com.tr"},"tarih":"2026-11-01T14:32:26.408Z","_id":"XCV77qZqMEhkzD8i"}
+{"tip":"RSS_PARSE_HATA","mesaj":"Kaynak çekilemedi: Anadolu Ajansi","detay":{"url":"https://www.aa.com.tr/tr/rss/default?cat=ekonomi","error":"getaddrinfo ENOTFOUND www.aa.com.tr"},"tarih":"2026-11-01T22:45:11.059Z","_id":"rxoQ2kHpAbhYrf3Z"}
+{"tip":"RSS_PARSE_HATA","mesaj":"Kaynak çekilemedi: Anadolu Ajansi","detay":{"url":"https://www.aa.com.tr/tr/rss/default?cat=ekonomi","error":"getaddrinfo ENOTFOUND www.aa.com.tr"},"tarih":"2026-11-01T22:54:10.998Z","_id":"3R9xLhGkrMmxKg0O"}

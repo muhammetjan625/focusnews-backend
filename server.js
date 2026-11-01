@@ -307,6 +307,50 @@ app.post('/api/gizli-yonetim', async (req, res) => {
     }
     res.status(400).json({ success: false });
 });
+app.post('/api/gizli-yonetim/ozel-mesaj-gonder', async (req, res) => {
+    const { baslik, mesaj, webhookId } = req.body;
+    if (!mesaj) return res.status(400).json({ success: false, error: 'Mesaj içeriği boş olamaz.' });
+
+    let hedefUrlLer = [];
+
+    if (webhookId === 'hepsi') {
+        const aktifler = await aktifWebhooksGetir();
+        hedefUrlLer = aktifler;
+    } else {
+        const secilenHook = await new Promise((resolve) => {
+            global.discordWebhookVeritabani.findOne({ _id: webhookId }, (err, doc) => resolve(doc));
+        });
+        if (secilenHook && secilenHook.url) {
+            hedefUrlLer.push(secilenHook.url);
+        }
+    }
+
+    if (hedefUrlLer.length === 0) {
+        return res.status(400).json({ success: false, error: 'Geçerli bir Discord hedefi bulunamadı.' });
+    }
+
+    const embedPayload = {
+        content: '📢 **MomoNews | Yönetici Özel Duyurusu**',
+        embeds: [{
+            title: baslik || 'Özel Bildirim',
+            description: mesaj,
+            color: 16776960,
+            timestamp: new Date().toISOString()
+        }]
+    };
+
+    for (const url of hedefUrlLer) {
+        try {
+            await axios.post(url, embedPayload, {
+                httpsAgent,
+                headers: { 'Content-Type': 'application/json', 'User-Agent': 'DiscordBot (1.0)' }
+            });
+        } catch (e) {}
+    }
+
+    sistemLogKaydet('OZEL_MESAJ', `Yönetici panelinden özel duyuru gönderildi. Hedef: ${webhookId}`);
+    res.json({ success: true, message: 'Özel mesaj seçilen kanala iletildi!' });
+});
 
 // SUNUCUYU BAŞLAT
 app.listen(PORT, () => {
