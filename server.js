@@ -312,7 +312,7 @@ app.post('/api/gizli-yonetim', async (req, res) => {
     res.status(400).json({ success: false });
 });
 
-// Güçlendirilmiş Hedefli Özel Mesaj Gönderme Endpoint'i
+// Kesin Hedefli Özel Mesaj Gönderme Endpoint'i (Herkese gitme sorunu çözüldü)
 app.post('/api/gizli-yonetim/ozel-mesaj-gonder', async (req, res) => {
     try {
         const { baslik, mesaj, webhookId } = req.body;
@@ -323,9 +323,11 @@ app.post('/api/gizli-yonetim/ozel-mesaj-gonder', async (req, res) => {
 
         let hedefUrlLer = [];
 
+        // Eğer 'hepsi' seçilmişse veya ID verilmemişse tüm aktif kanallara gönder
         if (!webhookId || webhookId === 'hepsi' || webhookId === '') {
             hedefUrlLer = await aktifWebhooksGetir();
         } else {
+            // Spesifik bir kanal seçilmişse SADECE o kanalı bul ve ekle (Asla herkese atlama!)
             const secilenHook = await new Promise((resolve) => {
                 global.discordWebhookVeritabani.findOne({ _id: webhookId }, (err, doc) => resolve(doc));
             });
@@ -333,12 +335,12 @@ app.post('/api/gizli-yonetim/ozel-mesaj-gonder', async (req, res) => {
             if (secilenHook && secilenHook.url) {
                 hedefUrlLer.push(secilenHook.url);
             } else {
-                hedefUrlLer = await aktifWebhooksGetir();
+                return res.status(400).json({ success: false, error: 'Seçilen Discord kanalı veritabanında bulunamadı.' });
             }
         }
 
         if (hedefUrlLer.length === 0) {
-            return res.status(400).json({ success: false, error: 'Sistemde kayıtlı Discord webhook kanalı bulunamadı. Önce Discord Kanalları sekmesinden webhook ekleyin.' });
+            return res.status(400).json({ success: false, error: 'Aktif Discord webhook kanalı bulunamadı.' });
         }
 
         const embedPayload = {
@@ -363,7 +365,7 @@ app.post('/api/gizli-yonetim/ozel-mesaj-gonder', async (req, res) => {
         }
 
         sistemLogKaydet('OZEL_MESAJ', `Özel duyuru gönderildi. Hedef: ${webhookId || 'hepsi'}`);
-        res.json({ success: true, message: 'Özel mesaj Discord kanallarına iletildi!' });
+        res.json({ success: true, message: 'Özel mesaj seçilen kanala iletildi!' });
         
     } catch (error) {
         console.error("Özel mesaj endpoint hatası:", error);
