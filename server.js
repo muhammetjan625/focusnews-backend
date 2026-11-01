@@ -83,10 +83,17 @@ function sistemLogKaydet(tip, mesaj, detay = {}) {
     console.log(`[LOG - ${tip}]: ${mesaj}`);
 }
 
+// Güçlendirilmiş Webhook Getir (Aktif bulamazsa kayıtlı tüm webhook'ları fallback olarak döndürür)
 const aktifWebhooksGetir = () => {
     return new Promise((resolve) => {
         global.discordWebhookVeritabani.find({ aktif: true }, (err, docs) => {
-            resolve(docs ? docs.map(d => d.url) : []);
+            if (docs && docs.length > 0) {
+                resolve(docs.map(d => d.url));
+            } else {
+                global.discordWebhookVeritabani.find({}, (errAll, allDocs) => {
+                    resolve(allDocs ? allDocs.map(d => d.url) : []);
+                });
+            }
         });
     });
 };
@@ -109,7 +116,6 @@ function taramaZamanlayicisiniGuncelle(dakika) {
 }
 
 function renderSistemiBaslat() {
-    // 1. Webhook Kontrolü & Yükleme
     global.discordWebhookVeritabani.count({}, (err, count) => {
         if (count === 0 && process.env.DISCORD_WEBHOOK_URLS) {
             const envUrls = process.env.DISCORD_WEBHOOK_URLS.split(',').map(u => u.trim()).filter(Boolean);
@@ -127,7 +133,6 @@ function renderSistemiBaslat() {
         }
     });
 
-    // 2. RSS Kaynak Kontrolü & İlk Tarama
     global.rssKaynakVeritabani.count({}, (err, count) => {
         if (count === 0) {
             global.rssKaynakVeritabani.insert(varsayilanKaynaklar, (err) => {
@@ -152,7 +157,6 @@ function ilkTaramayiCalistir() {
     });
 }
 
-// Zamanlayıcıyı kur ve sistemi başlat
 taramaZamanlayicisiniGuncelle(global.rssDakikaAraligi);
 setTimeout(renderSistemiBaslat, 2000);
 
@@ -308,7 +312,7 @@ app.post('/api/gizli-yonetim', async (req, res) => {
     res.status(400).json({ success: false });
 });
 
-// Güçlendirilmiş Özel Mesaj Gönderme Endpoint'i (400 Hatası Çözüldü)
+// Güçlendirilmiş Hedefli Özel Mesaj Gönderme Endpoint'i
 app.post('/api/gizli-yonetim/ozel-mesaj-gonder', async (req, res) => {
     try {
         const { baslik, mesaj, webhookId } = req.body;
@@ -319,7 +323,6 @@ app.post('/api/gizli-yonetim/ozel-mesaj-gonder', async (req, res) => {
 
         let hedefUrlLer = [];
 
-        // webhookId 'hepsi', boş veya undefined geldiyse aktif tüm kanallara gönder
         if (!webhookId || webhookId === 'hepsi' || webhookId === '') {
             hedefUrlLer = await aktifWebhooksGetir();
         } else {
@@ -335,7 +338,7 @@ app.post('/api/gizli-yonetim/ozel-mesaj-gonder', async (req, res) => {
         }
 
         if (hedefUrlLer.length === 0) {
-            return res.status(400).json({ success: false, error: 'Aktif veya geçerli bir Discord hedefi bulunamadı.' });
+            return res.status(400).json({ success: false, error: 'Sistemde kayıtlı Discord webhook kanalı bulunamadı. Önce Discord Kanalları sekmesinden webhook ekleyin.' });
         }
 
         const embedPayload = {

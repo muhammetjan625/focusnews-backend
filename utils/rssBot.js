@@ -2,7 +2,6 @@ const Parser = require('rss-parser');
 const axios = require('axios');
 const https = require('https');
 
-// Render ağ kısıtlamalarını ve SSL engellerini bypass eden özel agent
 const httpsAgent = new https.Agent({
     rejectUnauthorized: false,
     keepAlive: true,
@@ -18,8 +17,13 @@ const getActiveWebhooks = () => {
     return new Promise((resolve) => {
         if (!global.discordWebhookVeritabani) return resolve([]);
         global.discordWebhookVeritabani.find({ aktif: true }, (err, docs) => {
-            if (err || !docs) return resolve([]);
-            resolve(docs.map(d => d.url));
+            if (docs && docs.length > 0) {
+                resolve(docs.map(d => d.url));
+            } else {
+                global.discordWebhookVeritabani.find({}, (errAll, allDocs) => {
+                    resolve(allDocs ? allDocs.map(d => d.url) : []);
+                });
+            }
         });
     });
 };
@@ -34,7 +38,6 @@ function metniTemizle(metin) {
                 .replace(/&gt;/g, '>');
 }
 
-// Discord'a takılmadan, güvenli gönderim fonksiyonu
 async function discordaHaberGonder(haber) {
     const webhookUrls = await getActiveWebhooks();
     if (webhookUrls.length === 0) return;
@@ -65,7 +68,6 @@ async function discordaHaberGonder(haber) {
                     'User-Agent': 'DiscordBot (https://github.com/discord/discord-api-docs, 1.0)'
                 }
             });
-            // İstekler arası minik nefes payı (Discord rate limit ve blok yememek için)
             await new Promise(r => setTimeout(r, 3005));
         } catch (err) {
             console.error(`❌ Discord webhook gönderim hatası (${haber.source}):`, err.message);
@@ -79,7 +81,6 @@ async function haberleriCekVeKaydet(rssKaynaklari) {
 
     for (const kaynak of rssKaynaklari) {
         try {
-            // Render üzerinde doğrudan parseURL yerine Axios + httpsAgent kullanıyoruz
             const response = await axios.get(kaynak.url, {
                 httpsAgent,
                 headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/122.0.0.0 Safari/537.36' },
@@ -91,7 +92,6 @@ async function haberleriCekVeKaydet(rssKaynaklari) {
             for (const item of feed.items.slice(0, 5)) {
                 if (!item.link) continue;
 
-                // Veritabanında var mı kontrolü (Senkronize Promise yapısı)
                 const varMi = await new Promise((resolve) => {
                     global.haberVeritabani.findOne({ link: item.link }, (err, doc) => resolve(doc));
                 });
@@ -111,7 +111,6 @@ async function haberleriCekVeKaydet(rssKaynaklari) {
                         imageUrl: resim
                     };
 
-                    // Haberi veritabanına ekle ve sırayla Discord'a yolla
                     await new Promise((resolve) => {
                         global.haberVeritabani.insert(yeniHaber, async (err) => {
                             if (!err) {
