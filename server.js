@@ -17,7 +17,7 @@ const haberleriCekVeKaydet = require('./utils/rssBot');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Custom HTTPS Agent for Render
+// Custom HTTPS Agent for Railway/Render
 const httpsAgent = new https.Agent({
     rejectUnauthorized: false,
     keepAlive: true,
@@ -146,13 +146,13 @@ function renderSistemiBaslat() {
 function ilkTaramayiCalistir() {
     global.rssKaynakVeritabani.find({}, async (err, kaynaklar) => {
         if (kaynaklar && kaynaklar.length > 0) {
-            console.log(`🚀 Render sunucusu ilk RSS taramasını tetikliyor...`);
+            console.log(`🚀 Railway sunucusu ilk RSS taramasını tetikliyor...`);
             await haberleriCekVeKaydet(kaynaklar);
         }
     });
 }
 
-// Zamanlayıcıyı kur ve sistemi 2 saniye gecikmeyle (disk hazır olunca) başlat
+// Zamanlayıcıyı kur ve sistemi başlat
 taramaZamanlayicisiniGuncelle(global.rssDakikaAraligi);
 setTimeout(renderSistemiBaslat, 2000);
 
@@ -307,49 +307,65 @@ app.post('/api/gizli-yonetim', async (req, res) => {
     }
     res.status(400).json({ success: false });
 });
+
+// Güçlendirilmiş Özel Mesaj Gönderme Endpoint'i (400 Hatası Çözüldü)
 app.post('/api/gizli-yonetim/ozel-mesaj-gonder', async (req, res) => {
-    const { baslik, mesaj, webhookId } = req.body;
-    if (!mesaj) return res.status(400).json({ success: false, error: 'Mesaj içeriği boş olamaz.' });
-
-    let hedefUrlLer = [];
-
-    if (webhookId === 'hepsi') {
-        const aktifler = await aktifWebhooksGetir();
-        hedefUrlLer = aktifler;
-    } else {
-        const secilenHook = await new Promise((resolve) => {
-            global.discordWebhookVeritabani.findOne({ _id: webhookId }, (err, doc) => resolve(doc));
-        });
-        if (secilenHook && secilenHook.url) {
-            hedefUrlLer.push(secilenHook.url);
+    try {
+        const { baslik, mesaj, webhookId } = req.body;
+        
+        if (!mesaj || !mesaj.trim()) {
+            return res.status(400).json({ success: false, error: 'Mesaj içeriği boş olamaz.' });
         }
-    }
 
-    if (hedefUrlLer.length === 0) {
-        return res.status(400).json({ success: false, error: 'Geçerli bir Discord hedefi bulunamadı.' });
-    }
+        let hedefUrlLer = [];
 
-    const embedPayload = {
-        content: '📢 **MomoNews | Yönetici Özel Duyurusu**',
-        embeds: [{
-            title: baslik || 'Özel Bildirim',
-            description: mesaj,
-            color: 16776960,
-            timestamp: new Date().toISOString()
-        }]
-    };
-
-    for (const url of hedefUrlLer) {
-        try {
-            await axios.post(url, embedPayload, {
-                httpsAgent,
-                headers: { 'Content-Type': 'application/json', 'User-Agent': 'DiscordBot (1.0)' }
+        // webhookId 'hepsi', boş veya undefined geldiyse aktif tüm kanallara gönder
+        if (!webhookId || webhookId === 'hepsi' || webhookId === '') {
+            hedefUrlLer = await aktifWebhooksGetir();
+        } else {
+            const secilenHook = await new Promise((resolve) => {
+                global.discordWebhookVeritabani.findOne({ _id: webhookId }, (err, doc) => resolve(doc));
             });
-        } catch (e) {}
-    }
+            
+            if (secilenHook && secilenHook.url) {
+                hedefUrlLer.push(secilenHook.url);
+            } else {
+                hedefUrlLer = await aktifWebhooksGetir();
+            }
+        }
 
-    sistemLogKaydet('OZEL_MESAJ', `Yönetici panelinden özel duyuru gönderildi. Hedef: ${webhookId}`);
-    res.json({ success: true, message: 'Özel mesaj seçilen kanala iletildi!' });
+        if (hedefUrlLer.length === 0) {
+            return res.status(400).json({ success: false, error: 'Aktif veya geçerli bir Discord hedefi bulunamadı.' });
+        }
+
+        const embedPayload = {
+            content: '📢 **MomoNews | Yönetici Özel Duyurusu**',
+            embeds: [{
+                title: baslik || 'Özel Bildirim',
+                description: mesaj,
+                color: 16776960,
+                timestamp: new Date().toISOString()
+            }]
+        };
+
+        for (const url of hedefUrlLer) {
+            try {
+                await axios.post(url, embedPayload, {
+                    httpsAgent,
+                    headers: { 'Content-Type': 'application/json', 'User-Agent': 'DiscordBot (1.0)' }
+                });
+            } catch (err) {
+                console.error("Webhook gönderim hatası:", err.message);
+            }
+        }
+
+        sistemLogKaydet('OZEL_MESAJ', `Özel duyuru gönderildi. Hedef: ${webhookId || 'hepsi'}`);
+        res.json({ success: true, message: 'Özel mesaj Discord kanallarına iletildi!' });
+        
+    } catch (error) {
+        console.error("Özel mesaj endpoint hatası:", error);
+        res.status(500).json({ success: false, error: 'Sunucu hatası oluştu.' });
+    }
 });
 
 // SUNUCUYU BAŞLAT
