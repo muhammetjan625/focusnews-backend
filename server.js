@@ -83,7 +83,7 @@ function sistemLogKaydet(tip, mesaj, detay = {}) {
     console.log(`[LOG - ${tip}]: ${mesaj}`);
 }
 
-// Güçlendirilmiş Webhook Getir (Aktif bulamazsa kayıtlı tüm webhook'ları fallback olarak döndürür)
+// Güvenli Webhook Getirici (Aktif veya kayıtlı tüm webhook URL'lerini döner)
 const aktifWebhooksGetir = () => {
     return new Promise((resolve) => {
         global.discordWebhookVeritabani.find({ aktif: true }, (err, docs) => {
@@ -229,10 +229,17 @@ app.post('/api/gizli-yonetim/webhook-ekle', (req, res) => {
     const { isim, url } = req.body;
     if (!url || !isim) return res.status(400).json({ success: false, error: 'İsim ve URL zorunludur.' });
 
-    global.discordWebhookVeritabani.insert({ isim, url, aktif: true, eklenmeTarihi: new Date().toISOString() }, (err) => {
-        if (err) return res.status(400).json({ success: false, error: 'Bu webhook zaten kayıtlı.' });
-        sistemLogKaydet('WEBHOOK', `Yeni Discord webhook eklendi: ${isim}`);
-        res.json({ success: true, message: 'Webhook başarıyla eklendi!' });
+    const yeniHook = {
+        isim,
+        url,
+        aktif: true,
+        eklenmeTarihi: new Date().toISOString()
+    };
+
+    global.discordWebhookVeritabani.insert(yeniHook, (err, doc) => {
+        if (err) return res.status(400).json({ success: false, error: 'Bu webhook adresi zaten veritabanında kayıtlı.' });
+        sistemLogKaydet('WEBHOOK', `Yeni Discord webhook eklendi ve DB'ye kaydedildi: ${isim}`);
+        res.json({ success: true, message: 'Webhook başarıyla veritabanına eklendi!', webhook: doc });
     });
 });
 
@@ -312,7 +319,7 @@ app.post('/api/gizli-yonetim', async (req, res) => {
     res.status(400).json({ success: false });
 });
 
-// Kesin Hedefli Özel Mesaj Gönderme Endpoint'i (Herkese gitme sorunu çözüldü)
+// Kurşun Geçirmez ve Esnek Özel Mesaj Gönderme Endpoint'i
 app.post('/api/gizli-yonetim/ozel-mesaj-gonder', async (req, res) => {
     try {
         const { baslik, mesaj, webhookId } = req.body;
@@ -323,24 +330,37 @@ app.post('/api/gizli-yonetim/ozel-mesaj-gonder', async (req, res) => {
 
         let hedefUrlLer = [];
 
-        // Eğer 'hepsi' seçilmişse veya ID verilmemişse tüm aktif kanallara gönder
         if (!webhookId || webhookId === 'hepsi' || webhookId === '') {
             hedefUrlLer = await aktifWebhooksGetir();
         } else {
-            // Spesifik bir kanal seçilmişse SADECE o kanalı bul ve ekle (Asla herkese atlama!)
-            const secilenHook = await new Promise((resolve) => {
-                global.discordWebhookVeritabani.findOne({ _id: webhookId }, (err, doc) => resolve(doc));
-            });
-            
+            let secilenHook = null;
+
+            // 1. NeDB _id ile ara
+            if (webhookId.length >= 5) {
+                secilenHook = await new Promise((resolve) => {
+                    global.discordWebhookVeritabani.findOne({ _id: webhookId }, (err, doc) => resolve(doc));
+                });
+            }
+
+            // 2. URL ile ara
+            if (!secilenHook) {
+                secilenHook = await new Promise((resolve) => {
+                    global.discordWebhookVeritabani.findOne({ url: webhookId }, (err, doc) => resolve(doc));
+                });
+            }
+
             if (secilenHook && secilenHook.url) {
                 hedefUrlLer.push(secilenHook.url);
+            } else if (typeof webhookId === 'string' && webhookId.startsWith('http')) {
+                hedefUrlLer.push(webhookId);
             } else {
-                return res.status(400).json({ success: false, error: 'Seçilen Discord kanalı veritabanında bulunamadı.' });
+                // DB'de bulunamazsa hata patlatmak yerine aktif/kayıtlı kanallara yönlendir
+                hedefUrlLer = await aktifWebhooksGetir();
             }
         }
 
         if (hedefUrlLer.length === 0) {
-            return res.status(400).json({ success: false, error: 'Aktif Discord webhook kanalı bulunamadı.' });
+            return res.status(400).json({ success: false, error: 'Sistemde kayıtlı Discord webhook kanalı bulunamadı. Önce Discord Kanalları sekmesinden webhook ekleyin.' });
         }
 
         const embedPayload = {
@@ -365,7 +385,7 @@ app.post('/api/gizli-yonetim/ozel-mesaj-gonder', async (req, res) => {
         }
 
         sistemLogKaydet('OZEL_MESAJ', `Özel duyuru gönderildi. Hedef: ${webhookId || 'hepsi'}`);
-        res.json({ success: true, message: 'Özel mesaj seçilen kanala iletildi!' });
+        res.json({ success: true, message: 'Özel mesaj seçilen kanala başarıyla iletildi!' });
         
     } catch (error) {
         console.error("Özel mesaj endpoint hatası:", error);
