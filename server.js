@@ -13,6 +13,8 @@ const https = require('https');
 require('dotenv').config();
 
 const haberleriCekVeKaydet = require('./utils/rssBot');
+// 🌤️ Hava durumu cron modülünü dahil ediyoruz
+const { baslatHavaDurumuZamanlayicisi } = require('./weatherCron');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -354,7 +356,6 @@ app.post('/api/gizli-yonetim/ozel-mesaj-gonder', async (req, res) => {
             } else if (typeof webhookId === 'string' && webhookId.startsWith('http')) {
                 hedefUrlLer.push(webhookId);
             } else {
-                // DB'de bulunamazsa hata patlatmak yerine aktif/kayıtlı kanallara yönlendir
                 hedefUrlLer = await aktifWebhooksGetir();
             }
         }
@@ -396,4 +397,7 @@ app.post('/api/gizli-yonetim/ozel-mesaj-gonder', async (req, res) => {
 // SUNUCUYU BAŞLAT
 app.listen(PORT, () => {
     console.log(`🚀 MomoNews Backend başarıyla çalışıyor: http://localhost:${PORT}`);
+    
+    // 🌤️ 81 İl Hava Durumu Otomasyonunu Başlatıyoruz (6 saatte bir)
+    baslatHavaDurumuZamanlayicisi(httpsAgent);
 });
