@@ -13,6 +13,9 @@ const parser = new Parser({
     headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/122.0.0.0 Safari/537.36' }
 });
 
+// 🛡️ Botun ilk açılışında (deploy sonrası) geçmiş haberlerin Discord'a spam olmasını önleyen bayrak
+let ilkAcilisTamamlandi = false;
+
 const getActiveWebhooks = () => {
     return new Promise((resolve) => {
         if (!global.discordWebhookVeritabani) return resolve([]);
@@ -39,6 +42,9 @@ function metniTemizle(metin) {
 }
 
 async function discordaHaberGonder(haber) {
+    // Eğer ilk açılış turundaysak ve veritabanından eski haberler yakalandıysa Discord'a bildirim atma!
+    if (!ilkAcilisTamamlandi) return;
+
     const webhookUrls = await getActiveWebhooks();
     if (webhookUrls.length === 0) return;
 
@@ -115,6 +121,7 @@ async function haberleriCekVeKaydet(rssKaynaklari) {
                         global.haberVeritabani.insert(yeniHaber, async (err) => {
                             if (!err) {
                                 eklenenCount++;
+                                // Sadece ilk açılış turu bittikten sonra gerçekten yeni gelenler Discord'a gider
                                 await discordaHaberGonder(yeniHaber);
                             }
                             resolve();
@@ -134,6 +141,14 @@ async function haberleriCekVeKaydet(rssKaynaklari) {
             }
         }
     }
+
+    // İlk tarama döngüsü tamamlandıktan sonra bayrağı true yapıyoruz. 
+    // Bundan sonra sadece anlık olarak ilk defa yakalanan taze haberler Discord'a düşecek!
+    if (!ilkAcilisTamamlandi) {
+        ilkAcilisTamamlandi = true;
+        console.log(`🛡️ [RSS] İlk açılış senkronizasyonu tamamlandı. Artık sadece yeni haberler Discord'a bildirilecek.`);
+    }
+
     console.log(`✅ RSS Tarama Tamamlandı. Eklenen & Gönderilen Yeni Haber: ${eklenenCount}`);
 }
 
