@@ -3,6 +3,9 @@ const axios = require('axios');
 // Railway'deki canlı backend adresiniz
 const API_BASE = 'https://worker-backend.up.railway.app';
 
+// 🛡️ Botun ilk açılışında (deploy sonrası) geçmiş haberlerin Telegram'a spam olmasını önleyen bayrak
+let ilkAcilisTamamlandi = false;
+
 // Türkiye'nin 81 ili için merkez koordinatları
 const iller = [
   { isim: "Adana", lat: 37.0, lon: 35.32 },
@@ -88,40 +91,79 @@ const iller = [
   { isim: "Düzce", lat: 40.84, lon: 31.15 }
 ];
 
-async function telegramSenkronizasyonDongusu() {
+// Son gönderilen haberlerin ID'lerini takip etmek için bellek (Deploy spamini önler)
+let gonderilenHaberIdleri = new Set();
+
+async function telegramHaberVeHavaKontrolu() {
     const token = process.env.TELEGRAM_BOT_TOKEN;
     const channelId = process.env.TELEGRAM_CHANNEL_ID;
 
-    if (!token || !channelId) {
-        console.log("⚠️ [TELEGRAM] Token veya Kanal ID eksik.");
-        return;
-    }
-
-    const telegramApiUrl = `https://api.telegram.org/bot${token}/sendMessage`;
+    if (!token || !channelId) return;
 
     try {
-        // 1. Sunucudaki son haberleri çek ve Telegram'a gönder
-        console.log("📰 [TELEGRAM] Sunucudan son haberler alınıyor...");
+        // 1. Sunucudaki taze haberleri çek
         const haberRes = await axios.get(`${API_BASE}/api/haberler`).catch(() => null);
         
         if (haberRes && haberRes.data && haberRes.data.success) {
-            const sonHaberler = haberRes.data.data.slice(0, 5);
-            let haberMetni = "📰 *MomoNews | Son Dakika Gelişmeleri*\n\n";
-            sonHaberler.forEach((h, index) => {
-                haberMetni += `${index + 1}. *${h.title}*\n🔗 [Habere Git](${h.link})\n\n`;
-            });
+            const haberler = haberRes.data.data;
 
-            await axios.post(telegramApiUrl, {
-                chat_id: channelId,
-                text: haberMetni,
-                parse_mode: 'Markdown',
-                disable_web_page_preview: true
-            });
-            console.log("✅ [TELEGRAM] Haberler kanala iletildi.");
+            // Eğer bu ilk açılış turuysa, mevcut haberleri "gönderildi" olarak işaretle ki deploy anında eski haberler atılmasın!
+            if (!ilkAcilisTamamlandi) {
+                haberler.forEach(h => gonderilenHaberIdleri.add(h._id));
+                ilkAcilisTamamlandi = true;
+                console.log("🛡️ [TELEGRAM] İlk açılış senkronizasyonu tamamlandı. Eski haberler filtrelendi.");
+            } else {
+                // Sadece daha önce gönderilmemiş yepyeni haberleri bul
+                const yeniHaberler = haberler.filter(h => !gonderilenHaberIdleri.has(h._id));
+
+                for (const haber of yeniHaberler) {
+                    gonderilenHaberIdleri.add(haber._id);
+
+                    // Normal haber formatı (Link yok, sadece başlık, özet, kaynak ve kategori metin olarak var + Resimli)
+                    const mesajMetni = 
+                        `📰 *MomoNews | Son Dakika*\n\n` +
+                        `📌 *${haber.title}*\n\n` +
+                        `${haber.contentSnippet ? haber.contentSnippet.substring(0, 250) + '...' : ''}\n\n` +
+                        `🏷️ *Kategori:* ${haber.category} | 🏢 *Kaynak:* ${haber.source}`;
+
+                    try {
+                        if (haber.imageUrl) {
+                            // Resimli haber gönderimi (sendPhoto)
+                            await axios.post(`https://api.telegram.org/bot${token}/sendPhoto`, {
+                                chat_id: channelId,
+                                photo: haber.imageUrl,
+                                caption: mesajMetni,
+                                parse_mode: 'Markdown'
+                            });
+                        } else {
+                            // Resim yoksa sadece metin gönderimi (sendMessage)
+                            await axios.post(`https://api.telegram.org/bot${token}/sendMessage`, {
+                                chat_id: channelId,
+                                text: mesajMetni,
+                                parse_mode: 'Markdown'
+                            });
+                        }
+                        await new Promise(r => setTimeout(r, 2000)); // Rate limit koruması
+                    } catch (err) {
+                        console.error("❌ Telegram haber gönderim hatası:", err.message);
+                    }
+                }
+            }
         }
+    } catch (err) {
+        console.error("❌ [TELEGRAM] Haber döngüsü hatası:", err.message);
+    }
+}
 
-        // 2. 81 il hava durumunu Open-Meteo'dan çek ve Discord'dakinin aynısı olacak şekilde parçalara bölerek gönder
-        console.log("🌤️ [TELEGRAM] 81 il hava durumu verileri toplanıyor...");
+// 2. 6 Saatte bir 81 il hava durumu raporunu gönderen fonksiyon
+async function telegramHavaDurumunuGonder() {
+    const token = process.env.TELEGRAM_BOT_TOKEN;
+    const channelId = process.env.TELEGRAM_CHANNEL_ID;
+
+    if (!token || !channelId) return;
+
+    try {
+        console.log("🌤️ [TELEGRAM HAVA] 81 il hava durumu verileri toplanıyor...");
         let raporParcalari = ["🌤️ *MomoNews | 6 Saatlik Türkiye Geneli Hava Durumu Raporu*\n"];
         let aktifParca = 0;
 
@@ -139,24 +181,22 @@ async function telegramSenkronizasyonDongusu() {
             } catch (e) {}
         }
 
+        const url = `https://api.telegram.org/bot${token}/sendMessage`;
         for (const parca of raporParcalari) {
-            await axios.post(telegramApiUrl, {
-                chat_id: channelId,
-                text: parca,
-                parse_mode: 'Markdown'
-            }, { timeout: 10000 });
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            try {
+                await axios.post(url, { chat_id: channelId, text: parca, parse_mode: 'Markdown' }, { timeout: 10000 });
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            } catch (err) {}
         }
-        console.log("✅ [TELEGRAM] 81 il hava durumu raporu kanala iletildi.");
-
-    } catch (err) {
-        console.error("❌ [TELEGRAM] Senkronizasyon hatası:", err.message);
-    }
+        console.log("✅ [TELEGRAM HAVA] 81 il hava durumu raporu kanala iletildi.");
+    } catch (err) {}
 }
 
-// İlk çalıştırma (Sunucu açıldıktan 10 saniye sonra)
-setTimeout(telegramSenkronizasyonDongusu, 10000);
+// Zamanlayıcılar:
+// Haberleri her 2 dakikada bir kontrol et (Yeni haber varsa anında resimli ve metin olarak atar, eskileri atlamaz)
+setTimeout(telegramHaberVeHavaKontrolu, 10000);
+setInterval(telegramHaberVeHavaKontrolu, 2 * 60 * 1000);
 
-// Her 6 saatte bir tekrarlama döngüsü (6 * 60 * 60 * 1000 ms)
+// Hava durumunu her 6 saatte bir gönder
 const ALTI_SAAT = 6 * 60 * 60 * 1000;
-setInterval(telegramSenkronizasyonDongusu, ALTI_SAAT);
+setInterval(telegramHavaDurumunuGonder, ALTI_SAAT);
