@@ -321,29 +321,40 @@ app.post('/api/gizli-yonetim', async (req, res) => {
     res.status(400).json({ success: false });
 });
 
-// Kurşun Geçirmez ve Esnek Özel Mesaj Gönderme Endpoint'i
-app.post('/api/gizli-yonetim/ozel-mesaj-gonder', async (req, res) => {
+// Telegram özel mesaj / duyuru gönderme endpoint'i
+app.post('/api/gizli-yonetim/telegram-ozel-mesaj', async (req, res) => {
+    const { baslik, mesaj } = req.body;
+    const token = process.env.TELEGRAM_BOT_TOKEN;
+    const channelId = process.env.TELEGRAM_CHANNEL_ID;
+
+    if (!token || !channelId) {
+        return res.status(400).json({ success: false, error: "Telegram Token veya Kanal ID tanımlı değil." });
+    }
+
+    if (!mesaj) {
+        return res.status(400).json({ success: false, error: "Mesaj içeriği boş olamaz." });
+    }
+
     try {
-        const { baslik, mesaj, webhookId } = req.body;
-        
-        if (!mesaj || !mesaj.trim()) {
-            return res.status(400).json({ success: false, error: 'Mesaj içeriği boş olamaz.' });
+        let formatliMesaj = "";
+        if (baslik) {
+            formatliMesaj += `📢 *${baslik}*\n\n`;
         }
+        formatliMesaj += mesaj;
 
-        let hedefUrlLer = [];
+        const url = `https://api.telegram.org/bot${token}/sendMessage`;
+        await axios.post(url, {
+            chat_id: channelId,
+            text: formatliMesaj,
+            parse_mode: 'Markdown'
+        });
 
-        if (!webhookId || webhookId === 'hepsi' || webhookId === '') {
-            hedefUrlLer = await aktifWebhooksGetir();
-        } else {
-            let secilenHook = null;
-
-            // 1. NeDB _id ile ara
-            if (webhookId.length >= 5) {
-                secilenHook = await new Promise((resolve) => {
-                    global.discordWebhookVeritabani.findOne({ _id: webhookId }, (err, doc) => resolve(doc));
-                });
-            }
-
+        res.json({ success: true, message: "Telegram mesajı başarıyla gönderildi." });
+    } catch (err) {
+        console.error("❌ Telegram özel mesaj hatası:", err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
             // 2. URL ile ara
             if (!secilenHook) {
                 secilenHook = await new Promise((resolve) => {
